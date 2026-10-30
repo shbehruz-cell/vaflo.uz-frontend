@@ -104,8 +104,8 @@ export function RegistersCard({
                       )}
                     </TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="sm" onClick={() => setEditing(r)}>
-                        <Settings2 /> Sozlash
+                      <Button variant="ghost" size="sm" aria-label="Sozlash" onClick={() => setEditing(r)}>
+                        <Settings2 /> <span className="hidden sm:inline">Sozlash</span>
                       </Button>
                     </TableCell>
                   </TableRow>

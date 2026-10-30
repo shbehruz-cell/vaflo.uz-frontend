@@ -6,9 +6,9 @@ import { useRouter } from "next/navigation"
 import { useQuery } from "@tanstack/react-query"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { DateRangeFields, FilterBar } from "@/components/app/filter-bar"
 import { PageHeader } from "@/components/app/page-header"
 import { PaginationBar } from "@/components/app/pagination-bar"
 import { EmptyState, ErrorState, LoadingRows } from "@/components/app/states"
@@ -108,40 +108,27 @@ function ShiftsContent() {
 
       <section className="space-y-3">
         <h2 className="text-base font-semibold">Smenalar tarixi</h2>
-        <div className="flex flex-wrap items-end gap-3">
-          <div className="space-y-1">
-            <label htmlFor="f-status" className="text-xs text-muted-foreground">
-              Holati
-            </label>
-            <select
-              id="f-status"
-              value={status}
-              onChange={(e) => url.set({ status: e.target.value, page: 1 })}
-              className="h-10 rounded-lg border border-input bg-transparent px-2.5 text-sm dark:bg-input/30"
-            >
-              <option value="">Barchasi</option>
-              <option value="OPEN">Ochiq</option>
-              <option value="CLOSED">Yopilgan</option>
-            </select>
-          </div>
-          <div className="space-y-1">
-            <label htmlFor="f-from" className="text-xs text-muted-foreground">
-              Sanadan
-            </label>
-            <Input id="f-from" type="date" className="h-10" value={dateFrom} onChange={(e) => url.set({ dateFrom: e.target.value, page: 1 })} />
-          </div>
-          <div className="space-y-1">
-            <label htmlFor="f-to" className="text-xs text-muted-foreground">
-              Sanagacha
-            </label>
-            <Input id="f-to" type="date" className="h-10" value={dateTo} onChange={(e) => url.set({ dateTo: e.target.value, page: 1 })} />
-          </div>
-          {(status || dateFrom || dateTo) && (
-            <Button variant="ghost" className="h-10" onClick={() => url.set({ status: null, dateFrom: null, dateTo: null, page: 1 })}>
-              Filtrni tozalash
-            </Button>
-          )}
-        </div>
+        <FilterBar
+          activeCount={[status, dateFrom, dateTo].filter(Boolean).length}
+          onReset={() => url.set({ status: null, dateFrom: null, dateTo: null, page: 1 })}
+        >
+          <select
+            aria-label="Holati"
+            value={status}
+            onChange={(e) => url.set({ status: e.target.value, page: 1 })}
+            className="h-10 rounded-lg border border-input bg-transparent px-2.5 text-sm dark:bg-input/30"
+          >
+            <option value="">Barcha holatlar</option>
+            <option value="OPEN">Ochiq</option>
+            <option value="CLOSED">Yopilgan</option>
+          </select>
+          <DateRangeFields
+            from={dateFrom}
+            to={dateTo}
+            onFrom={(v) => url.set({ dateFrom: v, page: 1 })}
+            onTo={(v) => url.set({ dateTo: v, page: 1 })}
+          />
+        </FilterBar>
 
         {list.isError ? (
           <ErrorState error={list.error} onRetry={() => list.refetch()} />
@@ -151,7 +138,23 @@ function ShiftsContent() {
           <EmptyState title="Smenalar topilmadi" description="Filtrlarni o‘zgartirib ko‘ring." />
         ) : (
           <>
-            <div className="overflow-hidden rounded-2xl border bg-card">
+            <div className="space-y-2 md:hidden">
+              {list.data.items.map((s) => (
+                <Link key={s.id} href={`/shifts/${s.id}`} className="block rounded-2xl border bg-card p-3 active:bg-muted/50">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-medium">{formatDateTime(s.openedAt)}</span>
+                    <ShiftStatusBadge status={s.status} />
+                  </div>
+                  <div className="mt-1 flex items-center justify-between gap-2 text-sm text-muted-foreground">
+                    <span className="min-w-0 truncate">{showCashier ? (s.cashierName ?? "—") : s.closedAt ? formatDateTime(s.closedAt) : "Ochiq"}</span>
+                    <span className="flex items-center gap-1.5">
+                      Farq <DifferenceText value={s.difference} />
+                    </span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+            <div className="hidden overflow-hidden rounded-2xl border bg-card md:block">
               <Table>
                 <TableHeader className="bg-muted/50 text-xs font-medium text-muted-foreground">
                   <TableRow>

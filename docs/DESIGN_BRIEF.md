@@ -47,3 +47,11 @@ Responsive to 360px (no horizontal page scroll), visible keyboard focus (don't r
 | D — Boshqaruv va qobiq | `src/app/(app)/layout.tsx`, `src/components/app/`, `src/app/login/`, `src/app/(app)/account/`, `src/app/(app)/owner/users/`, `src/app/(app)/owner/settings/`, `src/app/(app)/audit/`, `src/components/owner/` |
 
 Report back in ≤6 lines: what you changed visually, anything you deliberately left alone, and any issue you found outside your files (don't fix it).
+
+## Mobile pass (iOS) — rules
+- **List filters:** use `FilterBar` from `src/components/app/filter-bar.tsx` (props: `search`, `children` = filter controls, `activeCount`, `onReset`, `actions`). On mobile it shows only the search + a compact "Filtr" button; filters open in a bottom sheet. Desktop keeps the inline paper toolbar. Do not render your own toolbar wrapper around it. Compute `activeCount` from the URL filter values that differ from default; `onReset` clears them via `useUrlState().set({...: null, page: 1})`.
+- **Dates:** use `DateRangeFields` from the same file (labelled "Dan"/"Gacha", iOS-safe). Never a bare `<input type="date">` without a visible label.
+- **Preset chips / tabs** that don't fit 360px: one horizontal scrolling row (`scroll-row gap-2 -mx-4 px-4 md:mx-0 md:px-0 md:flex-wrap`), items `shrink-0`; never wrap tabs into two lines.
+- **Tables on mobile:** if a table has more than 3 meaningful columns, show a card list below `md` (`md:hidden` cards / `hidden md:block` table). Nothing may be cut off at 360px.
+- **Page header actions on mobile:** icon-only or short labels (`<span className="hidden sm:inline">…</span>`), so the header stays one line.
+- Tap targets ≥ 40px. No horizontal page scroll at 360px.

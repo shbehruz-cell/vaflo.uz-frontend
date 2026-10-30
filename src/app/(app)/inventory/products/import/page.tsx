@@ -236,7 +236,7 @@ export default function ImportPage() {
                 {shown.length === 0 ? (
                   <p className="text-sm text-muted-foreground">Ko‘rsatiladigan qator yo‘q.</p>
                 ) : (
-                  <div className="overflow-hidden rounded-lg border">
+                  <div className="overflow-x-auto rounded-lg border">
                     <Table>
                       <TableHeader className={THEAD}>
                         <TableRow>

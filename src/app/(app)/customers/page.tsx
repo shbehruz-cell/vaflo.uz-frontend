@@ -8,7 +8,8 @@ import { Plus, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { TABLE_CARD, THEAD, TOOLBAR_CARD, TROW } from "@/components/inventory/common"
+import { TABLE_CARD, THEAD, TROW } from "@/components/inventory/common"
+import { FilterBar } from "@/components/app/filter-bar"
 import { PageHeader } from "@/components/app/page-header"
 import { EmptyState, ErrorState, LoadingRows } from "@/components/app/states"
 import { PaginationBar } from "@/components/app/pagination-bar"
@@ -59,17 +60,19 @@ function CustomersContent() {
         actions={
           can("customers.manage") && (
             <Button onClick={() => setCreating(true)}>
-              <Plus /> Xaridor qo‘shish
+              <Plus /> <span className="hidden sm:inline">Xaridor qo‘shish</span><span className="sm:hidden">Qo‘shish</span>
             </Button>
           )
         }
       />
-      <div className={TOOLBAR_CARD}>
+      <FilterBar
+        search={
         <div className="relative lg:max-w-sm">
           <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input className="h-10 pl-8" placeholder="Ism yoki telefon" aria-label="Qidirish" value={text} onChange={(e) => setText(e.target.value)} />
         </div>
-      </div>
+        }
+      />
 
       {q.isLoading ? (
         <LoadingRows />

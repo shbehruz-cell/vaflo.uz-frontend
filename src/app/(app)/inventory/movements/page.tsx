@@ -3,12 +3,12 @@
 import { Suspense } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { X } from "lucide-react"
-import { MOVEMENT_LABELS, MovementBadge, NATIVE_SELECT, ProductPicker, TABLE_CARD, THEAD, TOOLBAR_CARD, TROW, REFERENCE_LABELS, useWarehouses, type Movement, type Product } from "@/components/inventory/common"
+import { MOVEMENT_LABELS, MovementBadge, NATIVE_SELECT, ProductPicker, TABLE_CARD, THEAD, TROW, REFERENCE_LABELS, useWarehouses, type Movement, type Product } from "@/components/inventory/common"
 import { EmptyState, ErrorState, LoadingRows } from "@/components/app/states"
+import { DateRangeFields, FilterBar } from "@/components/app/filter-bar"
 import { PageHeader } from "@/components/app/page-header"
 import { PaginationBar } from "@/components/app/pagination-bar"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { api, type Paginated } from "@/lib/api"
 import { formatDateTime, formatQty, UNIT_LABELS } from "@/lib/format"
@@ -66,7 +66,10 @@ function MovementsView() {
     <div className="space-y-4">
       <PageHeader title="Ombor harakatlari" description="Kirim, chiqim va tuzatishlar tarixi" />
 
-      <div className={`${TOOLBAR_CARD} grid gap-2 sm:grid-cols-2 lg:grid-cols-5`}>
+      <FilterBar
+        activeCount={[warehouseId, type, productId, from, to].filter(Boolean).length}
+        onReset={() => set({ warehouse: null, type: null, product: null, from: null, to: null, page: 1 })}
+      >
         <select className={NATIVE_SELECT} aria-label="Ombor" value={warehouseId} onChange={(e) => set({ warehouse: e.target.value, page: 1 })}>
           <option value="">Barcha omborlar</option>
           {warehouses?.map((w) => (
@@ -83,8 +86,7 @@ function MovementsView() {
             </option>
           ))}
         </select>
-        <Input type="date" className="h-10" aria-label="Sanadan" value={from} max={to || undefined} onChange={(e) => set({ from: e.target.value, page: 1 })} />
-        <Input type="date" className="h-10" aria-label="Sanagacha" value={to} min={from || undefined} onChange={(e) => set({ to: e.target.value, page: 1 })} />
+        <DateRangeFields from={from} to={to} onFrom={(v) => set({ from: v, page: 1 })} onTo={(v) => set({ to: v, page: 1 })} />
         {productId ? (
           <div className="flex h-10 items-center justify-between gap-2 rounded-lg border px-2.5 text-sm">
             <span className="truncate">{productQ.data?.name ?? "Mahsulot…"}</span>
@@ -95,7 +97,7 @@ function MovementsView() {
         ) : (
           <ProductPicker label="Mahsulot bo‘yicha" onPick={(p) => set({ product: p.id, page: 1 })} />
         )}
-      </div>
+      </FilterBar>
 
       {isLoading ? (
         <LoadingRows />

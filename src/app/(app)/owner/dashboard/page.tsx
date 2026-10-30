@@ -32,7 +32,7 @@ import { formatMoney, formatQty, UNIT_LABELS } from "@/lib/format"
 
 function Kpi({ label, value, hint, loading, primary }: { label: string; value: string; hint?: string; loading: boolean; primary?: boolean }) {
   return (
-    <div className={cn("-mb-px -mr-px space-y-1 border-b border-r p-4", primary && "col-span-2 sm:p-5")}>
+    <div className={cn("-mb-px -mr-px min-w-0 space-y-1 border-b border-r p-3 sm:p-4", primary && "col-span-2 sm:p-5")}>
       <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
         <span>{label}</span>
         {hint && (
@@ -49,7 +49,7 @@ function Kpi({ label, value, hint, loading, primary }: { label: string; value: s
       {loading ? (
         <Skeleton className={primary ? "h-9 w-40" : "h-7 w-28"} />
       ) : (
-        <div className={cn("truncate font-semibold tabular-nums tracking-tight", primary ? "text-3xl font-bold sm:text-4xl" : "text-xl")}>{value}</div>
+        <div className={cn("truncate font-semibold tabular-nums tracking-tight", primary ? "text-3xl font-bold sm:text-4xl" : "text-lg sm:text-xl")}>{value}</div>
       )}
     </div>
   )

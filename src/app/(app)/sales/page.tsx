@@ -8,10 +8,11 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { DateRangeFields, FilterBar } from "@/components/app/filter-bar"
 import { PageHeader } from "@/components/app/page-header"
 import { EmptyState, ErrorState, LoadingRows } from "@/components/app/states"
 import { PaginationBar } from "@/components/app/pagination-bar"
-import { TABLE_CARD, THEAD, TOOLBAR_CARD, TROW } from "@/components/inventory/common"
+import { TABLE_CARD, THEAD, TROW } from "@/components/inventory/common"
 import { CustomerFilter } from "@/components/sales/customer-filter"
 import { NativeSelect } from "@/components/sales/native-select"
 import { SaleStatusBadge } from "@/components/sales/sale-status-badge"
@@ -108,6 +109,7 @@ function SalesContent() {
         key={label}
         type="button"
         size="sm"
+        className="shrink-0"
         variant={active ? "default" : "outline"}
         onClick={() => url.set({ from: f, to: t, page: 1 })}
       >
@@ -117,7 +119,6 @@ function SalesContent() {
   }
   const today = tashkentDate(0)
   const yesterday = tashkentDate(1)
-  const hasFilters = Object.keys(url.all).some((k) => k !== "page")
 
   return (
     <div className="space-y-4">
@@ -126,30 +127,26 @@ function SalesContent() {
         <p className="rounded-lg border bg-card px-3 py-2 text-sm text-muted-foreground">Faqat o‘z sotuvlaringiz</p>
       )}
 
-      <div className={`${TOOLBAR_CARD} space-y-3`}>
-        <div className="flex flex-wrap gap-2">
+      <FilterBar
+        search={<Input className="h-10" placeholder="Chek raqami" aria-label="Chek raqami" value={receipt} onChange={(e) => setReceipt(e.target.value)} />}
+        activeCount={Object.keys(url.all).filter((k) => k !== "page").length}
+        onReset={() => {
+          setReceipt("")
+          setBarcode("")
+          router.replace("/sales")
+        }}
+      >
+        <div className="scroll-row flex gap-2">
           {chip("Bugun", today, today)}
           {chip("Kecha", yesterday, yesterday)}
           {chip("7 kun", tashkentDate(6), today)}
           {chip("Oy", today.slice(0, 8) + "01", today)}
         </div>
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-          <label className="space-y-1 text-xs text-muted-foreground">
-            Chek raqami
-            <Input className="h-10" placeholder="Chek №" value={receipt} onChange={(e) => setReceipt(e.target.value)} />
-          </label>
           <label className="space-y-1 text-xs text-muted-foreground">
             Mahsulot shtrix-kodi
             <Input className="h-10" placeholder="Shtrix-kod" value={barcode} onChange={(e) => setBarcode(e.target.value)} />
           </label>
-          <label className="space-y-1 text-xs text-muted-foreground">
-            Dan
-            <Input type="date" className="h-10" value={from} onChange={(e) => url.set({ from: e.target.value, page: 1 })} />
-          </label>
-          <label className="space-y-1 text-xs text-muted-foreground">
-            Gacha
-            <Input type="date" className="h-10" value={to} onChange={(e) => url.set({ to: e.target.value, page: 1 })} />
-          </label>
+        <DateRangeFields from={from} to={to} onFrom={(v) => url.set({ from: v, page: 1 })} onTo={(v) => url.set({ to: v, page: 1 })} />
           <div className="space-y-1 text-xs text-muted-foreground">
             Xaridor
             <CustomerFilter customerId={customerId} onChange={(id) => url.set({ customerId: id, page: 1 })} />
@@ -200,21 +197,7 @@ function SalesContent() {
               ))}
             </NativeSelect>
           </label>
-        </div>
-        {hasFilters && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              setReceipt("")
-              setBarcode("")
-              router.replace("/sales")
-            }}
-          >
-            Filtrlarni tozalash
-          </Button>
-        )}
-      </div>
+      </FilterBar>
 
       {q.isLoading ? (
         <LoadingRows />

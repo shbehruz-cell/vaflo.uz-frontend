@@ -5,9 +5,10 @@ import Link from "next/link"
 import { useQuery } from "@tanstack/react-query"
 import { Archive, ClipboardList, FileSpreadsheet, MoreHorizontal, Pencil, Plus, RotateCcw, Search } from "lucide-react"
 import { ArchiveDialog } from "@/components/inventory/archive-dialog"
-import { ActiveBadge, NATIVE_SELECT, TABLE_CARD, THEAD, TOOLBAR_CARD, TROW, WARN_BADGE, useCategories, type Product } from "@/components/inventory/common"
+import { ActiveBadge, NATIVE_SELECT, TABLE_CARD, THEAD, TROW, WARN_BADGE, useCategories, type Product } from "@/components/inventory/common"
 import { ProductFormDialog } from "@/components/inventory/product-form"
 import { ErrorState, EmptyState, LoadingRows } from "@/components/app/states"
+import { FilterBar } from "@/components/app/filter-bar"
 import { PageHeader } from "@/components/app/page-header"
 import { PaginationBar } from "@/components/app/pagination-bar"
 import { Badge } from "@/components/ui/badge"
@@ -130,47 +131,50 @@ function ProductsView() {
           canManage && (
             <>
               <Button variant="outline" className="h-10" render={<Link href="/inventory/products/import" />} nativeButton={false}>
-                <FileSpreadsheet /> Excel/CSV’dan import
+                <FileSpreadsheet /> <span className="hidden sm:inline">Excel/CSV’dan import</span><span className="sm:hidden">Import</span>
               </Button>
               <Button className="h-10" onClick={openCreate}>
-                <Plus /> Mahsulot qo‘shish
+                <Plus /> <span className="hidden sm:inline">Mahsulot qo‘shish</span><span className="sm:hidden">Qo‘shish</span>
               </Button>
             </>
           )
         }
       />
 
-      <div className={`${TOOLBAR_CARD} flex flex-col gap-2 lg:flex-row lg:items-center`}>
-        <div className="relative lg:max-w-sm lg:flex-1">
-          <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input className="h-10 pl-8" placeholder="Nomi, SKU yoki shtrix-kod" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Qidirish" />
-        </div>
-        <div className="grid grid-cols-2 gap-2 lg:flex lg:items-center">
-          <select className={`${NATIVE_SELECT} lg:w-44`} aria-label="Kategoriya" value={categoryId} onChange={(e) => set({ category: e.target.value, page: 1 })}>
-            <option value="">Barcha kategoriyalar</option>
-            {categories?.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-          <select className={`${NATIVE_SELECT} lg:w-36`} aria-label="Holat" value={status} onChange={(e) => set({ status: e.target.value === "active" ? null : e.target.value, page: 1 })}>
-            <option value="active">Faol</option>
-            <option value="archived">Arxiv</option>
-            <option value="all">Barchasi</option>
-          </select>
-          <select className={`${NATIVE_SELECT} lg:w-48`} aria-label="Saralash" value={sort} onChange={(e) => set({ sort: e.target.value === "name:asc" ? null : e.target.value, page: 1 })}>
-            <option value="name:asc">Nomi (A–Z)</option>
-            <option value="name:desc">Nomi (Z–A)</option>
-            <option value="salePrice:asc">Narx: arzondan</option>
-            <option value="salePrice:desc">Narx: qimmatdan</option>
-            <option value="createdAt:desc">Yangi qo‘shilganlar</option>
-          </select>
-          <Button variant={low ? "default" : "outline"} className="h-10" aria-pressed={low} onClick={() => set({ low: low ? null : "1", page: 1 })}>
-            Faqat kam qolganlar
-          </Button>
-        </div>
-      </div>
+      <FilterBar
+        search={
+          <div className="relative">
+            <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input className="h-10 pl-8" placeholder="Nomi, SKU yoki shtrix-kod" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Qidirish" />
+          </div>
+          }
+        activeCount={[categoryId, low, status !== "active", sort !== "name:asc"].filter(Boolean).length}
+        onReset={() => set({ category: null, low: null, status: null, sort: null, page: 1 })}
+      >
+        <select className={`${NATIVE_SELECT}`} aria-label="Kategoriya" value={categoryId} onChange={(e) => set({ category: e.target.value, page: 1 })}>
+          <option value="">Barcha kategoriyalar</option>
+          {categories?.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+        <select className={`${NATIVE_SELECT}`} aria-label="Holat" value={status} onChange={(e) => set({ status: e.target.value === "active" ? null : e.target.value, page: 1 })}>
+          <option value="active">Faol</option>
+          <option value="archived">Arxiv</option>
+          <option value="all">Barchasi</option>
+        </select>
+        <select className={`${NATIVE_SELECT}`} aria-label="Saralash" value={sort} onChange={(e) => set({ sort: e.target.value === "name:asc" ? null : e.target.value, page: 1 })}>
+          <option value="name:asc">Nomi (A–Z)</option>
+          <option value="name:desc">Nomi (Z–A)</option>
+          <option value="salePrice:asc">Narx: arzondan</option>
+          <option value="salePrice:desc">Narx: qimmatdan</option>
+          <option value="createdAt:desc">Yangi qo‘shilganlar</option>
+        </select>
+        <Button variant={low ? "default" : "outline"} className="h-10" aria-pressed={low} onClick={() => set({ low: low ? null : "1", page: 1 })}>
+          Faqat kam qolganlar
+        </Button>
+      </FilterBar>
 
       {isLoading ? (
         <LoadingRows />

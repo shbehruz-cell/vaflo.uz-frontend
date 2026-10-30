@@ -4,6 +4,7 @@ import { Suspense, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { Download } from "lucide-react"
 import { toast } from "sonner"
+import { FilterBar } from "@/components/app/filter-bar"
 import { PageHeader } from "@/components/app/page-header"
 import { EmptyState, ErrorState, LoadingRows, NoAccess } from "@/components/app/states"
 import { NativeSelect } from "@/components/reports/native-select"
@@ -116,42 +117,57 @@ function Reports() {
     <div className="space-y-5">
       <PageHeader title="Hisobotlar" description="Savdo, mahsulot va kassirlar bo‘yicha tahlil" />
 
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-        <div className="flex flex-col gap-3">
-          <PeriodFilter defaultPreset="month" />
-          <div className="grid gap-2 sm:grid-cols-3">
-            <NativeSelect
-              aria-label="Kassa"
-              value={registerId}
-              onChange={(e) => set({ registerId: e.target.value })}
-              options={[{ value: "", label: "Barcha kassalar" }, ...(registers.data ?? []).map((r) => ({ value: r.id, label: r.name }))]}
-            />
-            <NativeSelect
-              aria-label="To‘lov usuli"
-              value={paymentMethod}
-              onChange={(e) => set({ paymentMethod: e.target.value })}
-              options={[{ value: "", label: "Barcha to‘lov usullari" }, ...Object.entries(PAYMENT_LABELS).map(([value, label]) => ({ value, label }))]}
-            />
-            <NativeSelect
-              aria-label="Kategoriya"
-              value={categoryId}
-              onChange={(e) => set({ categoryId: e.target.value })}
-              options={[{ value: "", label: "Barcha kategoriyalar" }, ...(categories.data ?? []).map((c) => ({ value: c.id, label: c.name }))]}
-            />
-          </div>
-        </div>
-        <Button variant="outline" className="shrink-0 self-start" onClick={() => void exportCsv()} disabled={!ready || exporting}>
-          {exporting ? <Spinner /> : <Download />} CSV yuklab olish
-        </Button>
+      <div className="space-y-3">
+        <PeriodFilter defaultPreset="month" />
+        <FilterBar
+          activeCount={[registerId, paymentMethod, categoryId].filter(Boolean).length}
+          onReset={() => set({ registerId: null, paymentMethod: null, categoryId: null })}
+          actions={
+            <Button
+              variant="outline"
+              className="h-10 shrink-0 max-md:w-10 max-md:px-0"
+              aria-label="CSV yuklab olish"
+              onClick={() => void exportCsv()}
+              disabled={!ready || exporting}
+            >
+              {exporting ? <Spinner /> : <Download />}
+              <span className="hidden sm:inline">CSV yuklab olish</span>
+            </Button>
+          }
+        >
+          <NativeSelect
+            aria-label="Kassa"
+            className="md:w-48"
+            value={registerId}
+            onChange={(e) => set({ registerId: e.target.value })}
+            options={[{ value: "", label: "Barcha kassalar" }, ...(registers.data ?? []).map((r) => ({ value: r.id, label: r.name }))]}
+          />
+          <NativeSelect
+            aria-label="To‘lov usuli"
+            className="md:w-56"
+            value={paymentMethod}
+            onChange={(e) => set({ paymentMethod: e.target.value })}
+            options={[{ value: "", label: "Barcha to‘lov usullari" }, ...Object.entries(PAYMENT_LABELS).map(([value, label]) => ({ value, label }))]}
+          />
+          <NativeSelect
+            aria-label="Kategoriya"
+            className="md:w-52"
+            value={categoryId}
+            onChange={(e) => set({ categoryId: e.target.value })}
+            options={[{ value: "", label: "Barcha kategoriyalar" }, ...(categories.data ?? []).map((c) => ({ value: c.id, label: c.name }))]}
+          />
+        </FilterBar>
       </div>
 
       <Tabs value={tab} onValueChange={(v) => set({ tab: v === "dynamics" ? "" : String(v) })}>
-        <TabsList variant="line" className="h-auto max-w-full flex-wrap">
-          <TabsTrigger value="dynamics">Savdo dinamikasi</TabsTrigger>
-          <TabsTrigger value="products">Mahsulotlar</TabsTrigger>
-          <TabsTrigger value="cashiers">Kassirlar</TabsTrigger>
-          <TabsTrigger value="low">Kam qolganlar</TabsTrigger>
-        </TabsList>
+        <div className="scroll-row -mx-4 px-4 md:mx-0 md:px-0">
+          <TabsList variant="line" className="h-auto w-max">
+            <TabsTrigger value="dynamics" className="shrink-0 px-3">Savdo dinamikasi</TabsTrigger>
+            <TabsTrigger value="products" className="shrink-0 px-3">Mahsulotlar</TabsTrigger>
+            <TabsTrigger value="cashiers" className="shrink-0 px-3">Kassirlar</TabsTrigger>
+            <TabsTrigger value="low" className="shrink-0 px-3">Kam qolganlar</TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="dynamics" className="space-y-4">
           <Section q={byDay} isEmpty={(d) => d.series.every((x) => x.receipts === 0 && Number(x.refunds) === 0)}>
@@ -165,7 +181,21 @@ function Reports() {
                     <SalesChart data={d.series} />
                   </CardContent>
                 </Card>
-                <div className="overflow-hidden rounded-xl border bg-card">
+                <ul className="divide-y rounded-xl border bg-card md:hidden">
+                  {[...d.series].reverse().map((r) => (
+                    <li key={r.date} className="space-y-1 p-3 text-sm">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="font-medium">{formatDate(r.date + "T12:00:00+05:00")}</span>
+                        <span className="font-semibold tabular-nums">{formatMoney(r.gross)}</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
+                        <span>Cheklar: {r.receipts}</span>
+                        <span className="tabular-nums">Qaytarishlar: {formatMoney(r.refunds)}</span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+                <div className="hidden overflow-hidden rounded-xl border bg-card md:block">
                   <Table>
                     <TableHeader className="bg-muted/50 text-xs [&_th]:text-muted-foreground">
                       <TableRow>

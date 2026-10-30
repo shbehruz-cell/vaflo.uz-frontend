@@ -3,6 +3,7 @@
 import { Suspense, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { Braces } from "lucide-react"
+import { DateRangeFields, FilterBar } from "@/components/app/filter-bar"
 import { PageHeader } from "@/components/app/page-header"
 import { PaginationBar } from "@/components/app/pagination-bar"
 import { EmptyState, ErrorState, LoadingRows, NoAccess } from "@/components/app/states"
@@ -76,13 +77,13 @@ const ENTITY_TYPES = ["Product", "Category", "Sale", "User", "Role", "Shift", "C
 
 const actionLabel = (code: string) => ACTION_LABELS[code] ?? code
 
-function Meta({ data }: { data: unknown }) {
+function Meta({ data, label = "Ko‘rish" }: { data: unknown; label?: string }) {
   const empty = data == null || (typeof data === "object" && Object.keys(data as object).length === 0)
   if (empty) return <span className="text-muted-foreground">—</span>
   return (
     <Popover>
       <PopoverTrigger render={<Button variant="ghost" size="sm" />}>
-        <Braces /> Ko‘rish
+        <Braces /> {label}
       </PopoverTrigger>
       <PopoverContent className="w-80 max-w-[calc(100vw-2rem)]" align="end">
         <pre className="max-h-72 overflow-auto rounded-lg bg-muted p-3 font-mono text-xs whitespace-pre-wrap break-all">{JSON.stringify(data, null, 2)}</pre>
@@ -115,7 +116,20 @@ function AuditLog() {
     <div className="space-y-5">
       <PageHeader title="Audit jurnali" description="Tizimdagi muhim amallar tarixi. Yozuvlarni o‘zgartirib bo‘lmaydi." />
 
-      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+      <FilterBar
+        search={
+          <Input
+            aria-label="Amal prefiksi"
+            placeholder="Amal kodi (masalan product.)"
+            value={actionInput}
+            onChange={(e) => setActionInput(e.target.value)}
+            onBlur={() => actionInput !== action && set({ action: actionInput.trim(), page: "" })}
+            onKeyDown={(e) => e.key === "Enter" && set({ action: actionInput.trim(), page: "" })}
+          />
+        }
+        activeCount={[action, entityType, dateFrom, dateTo].filter(Boolean).length}
+        onReset={reset}
+      >
         <NativeSelect
           aria-label="Amal turi"
           value={action}
@@ -125,28 +139,19 @@ function AuditLog() {
           }}
           options={groupOptions}
         />
-        <Input
-          aria-label="Amal prefiksi"
-          placeholder="Amal kodi (masalan product.)"
-          value={actionInput}
-          onChange={(e) => setActionInput(e.target.value)}
-          onBlur={() => actionInput !== action && set({ action: actionInput.trim(), page: "" })}
-          onKeyDown={(e) => e.key === "Enter" && set({ action: actionInput.trim(), page: "" })}
-        />
         <NativeSelect
           aria-label="Obyekt turi"
           value={entityType}
           onChange={(e) => set({ entityType: e.target.value, page: "" })}
           options={[{ value: "", label: "Barcha obyektlar" }, ...ENTITY_TYPES.map((t) => ({ value: t, label: t }))]}
         />
-        <Input type="date" aria-label="Boshlanish sanasi" value={dateFrom} onChange={(e) => set({ dateFrom: e.target.value, page: "" })} />
-        <div className="flex gap-2">
-          <Input type="date" aria-label="Tugash sanasi" value={dateTo} onChange={(e) => set({ dateTo: e.target.value, page: "" })} />
-          <Button variant="outline" onClick={reset}>
-            Tozalash
-          </Button>
-        </div>
-      </div>
+        <DateRangeFields
+          from={dateFrom}
+          to={dateTo}
+          onFrom={(v) => set({ dateFrom: v, page: "" })}
+          onTo={(v) => set({ dateTo: v, page: "" })}
+        />
+      </FilterBar>
 
       {q.isLoading ? (
         <LoadingRows />
@@ -156,7 +161,24 @@ function AuditLog() {
         <EmptyState title="Yozuv topilmadi" description="Filtrlarni o‘zgartirib ko‘ring." />
       ) : (
         <>
-          <div className="overflow-hidden rounded-2xl border bg-card">
+          <div className="space-y-2 md:hidden">
+            {q.data.items.map((r) => (
+              <div key={r.id} className="rounded-2xl border bg-card p-3">
+                <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                  <span className="whitespace-nowrap">{formatDateTime(r.createdAt)}</span>
+                  <span className="min-w-0 truncate">{r.actorName ?? "Tizim"}</span>
+                </div>
+                <div className="mt-1.5 flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="font-medium">{actionLabel(r.action)}</div>
+                    <div className="truncate font-mono text-xs text-muted-foreground">{r.action}</div>
+                  </div>
+                  <Meta data={r.metadata} label="Tafsilot" />
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="hidden overflow-hidden rounded-2xl border bg-card md:block">
             <Table>
               <TableHeader className="bg-muted/50 [&_th]:h-10 [&_th]:text-xs [&_th]:font-medium [&_th]:text-muted-foreground">
                 <TableRow>

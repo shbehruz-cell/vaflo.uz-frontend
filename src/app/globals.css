@@ -188,3 +188,32 @@ select optgroup {
   border: 0;
   border-top: 1.5px dashed var(--receipt-rule);
 }
+
+/* ── iOS Safari ──
+   1) 16px dan kichik maydonga fokus bo'lsa iOS sahifani kattalashtiradi — mobilda 16px.
+   2) type="date" iOS'da konteynerdan kengayib ketadi va bo'sh ko'rinadi. */
+@media (max-width: 767px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+input[type="date"],
+input[type="datetime-local"],
+input[type="time"] {
+  -webkit-appearance: none;
+  appearance: none;
+  min-width: 0;
+  max-width: 100%;
+}
+input[type="date"]::-webkit-date-and-time-value {
+  text-align: left;
+}
+/* Gorizontal scroll bo'ladigan qatorlar (tablar, tezkor tugmalar) */
+.scroll-row {
+  display: flex;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+}

@@ -6,6 +6,7 @@ import { Ban, KeyRound, Pencil, Plus, RefreshCw, Search, ShieldCheck } from "luc
 import { toast } from "sonner"
 import { EmptyState, ErrorState, LoadingRows } from "@/components/app/states"
 import { PaginationBar } from "@/components/app/pagination-bar"
+import { FilterBar } from "@/components/app/filter-bar"
 import { NativeSelect } from "@/components/reports/native-select"
 import {
   AlertDialog,
@@ -137,21 +138,48 @@ export function UsersTab() {
     setDialog(d)
   }
 
+  const rowActions = (u: StaffUser) => (
+    <div className="flex justify-end gap-1">
+      <Button variant="ghost" size="icon" aria-label="Tahrirlash" title="Tahrirlash" disabled={u.role.key === "owner" && !isOwner} onClick={() => open({ type: "edit", user: u })}>
+        <Pencil />
+      </Button>
+      <Button variant="ghost" size="icon" aria-label="Parolni tiklash" title="Parolni tiklash" disabled={u.role.key === "owner" && !isOwner} onClick={() => open({ type: "reset", user: u })}>
+        <KeyRound />
+      </Button>
+      <Button variant="ghost" size="icon" aria-label={u.status === "ACTIVE" ? "Bloklash" : "Blokdan chiqarish"} title={u.status === "ACTIVE" ? "Bloklash" : "Blokdan chiqarish"} disabled={locked(u)} onClick={() => open({ type: "status", user: u })}>
+        {u.status === "ACTIVE" ? <Ban /> : <ShieldCheck />}
+      </Button>
+    </div>
+  )
+
   const target = dialog && dialog.type !== "create" ? dialog.user : null
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-        <form
-          className="relative flex-1 sm:max-w-xs"
-          onSubmit={(e) => {
-            e.preventDefault()
-            set({ q: search, page: "" })
-          }}
-        >
-          <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input value={search} onChange={(e) => setSearch(e.target.value)} onBlur={() => search !== q && set({ q: search, page: "" })} placeholder="Ism yoki login" className="pl-8" aria-label="Qidirish" />
-        </form>
+      <FilterBar
+        search={
+          <form
+            className="relative"
+            onSubmit={(e) => {
+              e.preventDefault()
+              set({ q: search, page: "" })
+            }}
+          >
+            <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input value={search} onChange={(e) => setSearch(e.target.value)} onBlur={() => search !== q && set({ q: search, page: "" })} placeholder="Ism yoki login" className="pl-8" aria-label="Qidirish" />
+          </form>
+        }
+        activeCount={[q, status].filter(Boolean).length}
+        onReset={() => {
+          setSearch("")
+          set({ q: "", status: "", page: "" })
+        }}
+        actions={
+          <Button onClick={() => open({ type: "create" })} aria-label="Xodim qo‘shish">
+            <Plus /> <span className="hidden sm:inline">Xodim qo‘shish</span>
+          </Button>
+        }
+      >
         <NativeSelect
           className="sm:w-44"
           aria-label="Holat"
@@ -163,10 +191,7 @@ export function UsersTab() {
             { value: "BLOCKED", label: "Bloklangan" },
           ]}
         />
-        <Button className="sm:ml-auto" onClick={() => open({ type: "create" })}>
-          <Plus /> Xodim qo‘shish
-        </Button>
-      </div>
+      </FilterBar>
 
       {users.isLoading ? (
         <LoadingRows />
@@ -176,7 +201,26 @@ export function UsersTab() {
         <EmptyState title="Xodim topilmadi" description="Qidiruv yoki filtrni o‘zgartirib ko‘ring." />
       ) : (
         <>
-          <div className="overflow-hidden rounded-2xl border bg-card">
+          <div className="space-y-2 md:hidden">
+            {users.data.items.map((u) => (
+              <div key={u.id} className="rounded-2xl border bg-card p-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="truncate font-medium">
+                      {u.name} {u.id === me?.id && <span className="text-xs text-muted-foreground">(siz)</span>}
+                    </div>
+                    <div className="truncate text-xs text-muted-foreground">{u.login}</div>
+                  </div>
+                  <Badge variant={u.status === "ACTIVE" ? "outline" : "destructive"}>{u.status === "ACTIVE" ? "Faol" : "Bloklangan"}</Badge>
+                </div>
+                <div className="mt-2 flex items-center justify-between gap-2">
+                  <Badge variant={u.role.key === "owner" ? "default" : "secondary"}>{u.role.name}</Badge>
+                  {rowActions(u)}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="hidden overflow-hidden rounded-2xl border bg-card md:block">
             <Table>
               <TableHeader className="bg-muted/50 [&_th]:h-10 [&_th]:text-xs [&_th]:font-medium [&_th]:text-muted-foreground">
                 <TableRow>
@@ -204,17 +248,7 @@ export function UsersTab() {
                     </TableCell>
                     <TableCell className="hidden text-muted-foreground lg:table-cell">{formatDateTime(u.createdAt)}</TableCell>
                     <TableCell>
-                      <div className="flex justify-end gap-1">
-                        <Button variant="ghost" size="icon" aria-label="Tahrirlash" title="Tahrirlash" disabled={u.role.key === "owner" && !isOwner} onClick={() => open({ type: "edit", user: u })}>
-                          <Pencil />
-                        </Button>
-                        <Button variant="ghost" size="icon" aria-label="Parolni tiklash" title="Parolni tiklash" disabled={u.role.key === "owner" && !isOwner} onClick={() => open({ type: "reset", user: u })}>
-                          <KeyRound />
-                        </Button>
-                        <Button variant="ghost" size="icon" aria-label={u.status === "ACTIVE" ? "Bloklash" : "Blokdan chiqarish"} title={u.status === "ACTIVE" ? "Bloklash" : "Blokdan chiqarish"} disabled={locked(u)} onClick={() => open({ type: "status", user: u })}>
-                          {u.status === "ACTIVE" ? <Ban /> : <ShieldCheck />}
-                        </Button>
-                      </div>
+                      {rowActions(u)}
                     </TableCell>
                   </TableRow>
                 ))}

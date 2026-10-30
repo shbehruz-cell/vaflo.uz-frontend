@@ -155,7 +155,7 @@ export default function ProductDetailPage() {
             ) : !moves.data?.items.length ? (
               <EmptyState title="Harakatlar yo‘q" />
             ) : (
-              <div className="overflow-hidden rounded-lg border">
+              <div className="overflow-x-auto rounded-lg border">
                 <Table>
                   <TableHeader className={THEAD}>
                     <TableRow>
