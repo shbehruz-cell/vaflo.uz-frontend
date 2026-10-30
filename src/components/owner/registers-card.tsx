@@ -2,19 +2,18 @@
 
 import { useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { Plus, Settings2, Users } from "lucide-react"
+import { Monitor, Settings2, Users } from "lucide-react"
 import { toast } from "sonner"
 import { EmptyState, ErrorState, LoadingRows } from "@/components/app/states"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { api } from "@/lib/api"
+import { cn } from "@/lib/utils"
 
 export interface RegisterRow {
   id: string
@@ -35,88 +34,80 @@ interface Staff {
   role: { key: string; name: string }
 }
 
-/** Kassalar ro‘yxati: bandlik (ochiq smenalar / sig‘im) va biriktirilgan xodimlar. */
-export function RegistersCard({
-  warehouseName,
-  onAdd,
-  canAdd,
-}: {
-  warehouseName: (id: string) => string
-  onAdd: () => void
-  canAdd: boolean
-}) {
+/** Kassa sig‘imi: har bir kassir o‘rni bitta katak (to‘lgani — band). */
+function CapacitySlots({ used, max }: { used: number; max: number }) {
+  const shown = Math.min(max, 8)
+  return (
+    <div className="flex items-center gap-2" aria-label={`${used} ta kassir smenada, sig‘im ${max}`}>
+      <div className="flex gap-1" aria-hidden="true">
+        {Array.from({ length: shown }, (_, i) => (
+          <span key={i} className={cn("h-2.5 w-4 rounded-sm", i < used ? "bg-primary" : "bg-muted ring-1 ring-border ring-inset")} />
+        ))}
+        {max > shown && <span className="text-xs text-muted-foreground">+{max - shown}</span>}
+      </div>
+      <span className="text-xs text-muted-foreground tabular-nums">
+        {used}/{max}
+      </span>
+    </div>
+  )
+}
+
+/** Kassalar ro‘yxati (sozlamalar sahifasi bo‘limi ichida): bandlik, smenadagilar, biriktirilgan xodimlar. */
+export function RegistersList({ warehouseName }: { warehouseName: (id: string) => string }) {
   const regs = useQuery({ queryKey: ["registers"], queryFn: () => api.get<RegisterRow[]>("/registers") })
   const [editing, setEditing] = useState<RegisterRow | null>(null)
 
+  if (regs.isLoading) return <LoadingRows rows={2} />
+  if (regs.isError) return <ErrorState error={regs.error} onRetry={() => void regs.refetch()} />
+  if (!regs.data?.length) return <EmptyState title="Hali kassa yo‘q" description="Kassa qo‘shing — kassirlar shu kassada smena ochib savdo qiladi." />
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base font-semibold">Kassalar</CardTitle>
-        <CardDescription>Bir kassada bir nechta kassir ishlashi va kimlar ishlay olishini sozlang</CardDescription>
-        <CardAction>
-          <Button size="sm" onClick={onAdd} disabled={!canAdd}>
-            <Plus /> Kassa qo‘shish
-          </Button>
-        </CardAction>
-      </CardHeader>
-      <CardContent>
-        {regs.isLoading ? (
-          <LoadingRows rows={3} />
-        ) : regs.isError ? (
-          <ErrorState error={regs.error} onRetry={() => void regs.refetch()} />
-        ) : !regs.data?.length ? (
-          <EmptyState title="Hozircha kassa yo‘q" />
-        ) : (
-          <div className="overflow-hidden rounded-2xl border bg-card">
-            <Table>
-              <TableHeader className="bg-muted/50 [&_th]:h-10 [&_th]:text-xs [&_th]:font-medium [&_th]:text-muted-foreground">
-                <TableRow>
-                  <TableHead>Kassa</TableHead>
-                  <TableHead className="hidden sm:table-cell">Ombor</TableHead>
-                  <TableHead>Band / sig‘im</TableHead>
-                  <TableHead className="hidden md:table-cell">Kimlar ishlay oladi</TableHead>
-                  <TableHead className="w-0" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {regs.data.map((r) => (
-                  <TableRow key={r.id}>
-                    <TableCell>
-                      <div className="font-medium">{r.name}</div>
-                      <div className="font-mono text-xs text-muted-foreground">{r.code}</div>
-                    </TableCell>
-                    <TableCell className="hidden text-muted-foreground sm:table-cell">{warehouseName(r.warehouseId)}</TableCell>
-                    <TableCell>
-                      <Badge variant={r.openCount >= r.maxCashiers ? "default" : "secondary"} className="tabular-nums">
-                        {r.openCount} / {r.maxCashiers}
-                      </Badge>
-                      {r.openShifts.length > 0 && (
-                        <div className="mt-1 max-w-40 truncate text-xs text-muted-foreground">
-                          {r.openShifts.map((s) => s.cashierName ?? "—").join(", ")}
-                        </div>
-                      )}
-                    </TableCell>
-                    <TableCell className="hidden max-w-56 md:table-cell">
-                      {r.assignedUsers.length ? (
-                        <span className="line-clamp-2 text-sm">{r.assignedUsers.map((u) => u.name).join(", ")}</span>
-                      ) : (
-                        <span className="text-sm text-muted-foreground">Barcha kassirlar</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Button variant="ghost" size="sm" aria-label="Sozlash" onClick={() => setEditing(r)}>
-                        <Settings2 /> <span className="hidden sm:inline">Sozlash</span>
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-      </CardContent>
+    <>
+      <ul className="divide-y overflow-hidden rounded-2xl border bg-card">
+        {regs.data.map((r) => (
+          <li key={r.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:gap-4">
+            <div className="flex min-w-0 flex-1 items-center gap-3">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <Monitor className="size-5" />
+              </span>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="truncate font-medium">{r.name}</span>
+                  <Badge variant="outline" className="font-mono text-[11px]">
+                    {r.code}
+                  </Badge>
+                </div>
+                <div className="truncate text-xs text-muted-foreground">Ombor: {warehouseName(r.warehouseId)}</div>
+              </div>
+            </div>
+
+            <div className="grid gap-1.5 sm:w-56">
+              <CapacitySlots used={r.openCount} max={r.maxCashiers} />
+              <div className="truncate text-xs text-muted-foreground">
+                {r.openShifts.length ? `Smenada: ${r.openShifts.map((s) => s.cashierName ?? "—").join(", ")}` : "Hozir hech kim smenada emas"}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1.5 sm:w-48">
+              <Users className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+              {r.assignedUsers.length ? (
+                <span className="truncate text-xs" title={r.assignedUsers.map((u) => u.name).join(", ")}>
+                  {r.assignedUsers.slice(0, 2).map((u) => u.name).join(", ")}
+                  {r.assignedUsers.length > 2 && ` va yana ${r.assignedUsers.length - 2}`}
+                </span>
+              ) : (
+                <span className="text-xs text-muted-foreground">Barcha kassirlar</span>
+              )}
+            </div>
+
+            <Button variant="outline" size="sm" className="h-9 self-start sm:self-center" onClick={() => setEditing(r)}>
+              <Settings2 /> Sozlash
+            </Button>
+          </li>
+        ))}
+      </ul>
       {editing && <RegisterDialog key={editing.id} register={editing} onClose={() => setEditing(null)} />}
-    </Card>
+    </>
   )
 }
 
