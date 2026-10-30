@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { CreditCard } from "lucide-react"
+import { withBase } from "@/lib/base-path"
 import { cn } from "@/lib/utils"
 
 export type CardType = "UZCARD" | "HUMO" | "VISA" | "MASTERCARD" | "UNIONPAY" | "OTHER"
@@ -24,9 +25,9 @@ export const CARD_TYPE_LABELS: Record<string, string> = Object.fromEntries(CARD_
 // Manbalar (2026-10-29): uzcard.uz sayti logotipi (SVG), humocard.uz sayti logotipi,
 // UnionPay International brend markazi — asosiy inglizcha logotip (y-25).
 const LOGO_FILES: Partial<Record<CardType, string[]>> = {
-  UZCARD: ["/cards/uzcard.svg", "/cards/uzcard.png"],
-  HUMO: ["/cards/humo.png", "/cards/humo.svg"],
-  UNIONPAY: ["/cards/unionpay.png", "/cards/unionpay.svg"],
+  UZCARD: [withBase("/cards/uzcard.svg"), withBase("/cards/uzcard.png")],
+  HUMO: [withBase("/cards/humo.png"), withBase("/cards/humo.svg")],
+  UNIONPAY: [withBase("/cards/unionpay.png"), withBase("/cards/unionpay.svg")],
 }
 
 const tile = "flex h-7 w-11 shrink-0 items-center justify-center overflow-hidden rounded-md bg-white shadow-sm ring-1 ring-black/10"
