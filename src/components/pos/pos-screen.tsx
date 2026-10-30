@@ -30,6 +30,7 @@ import {
   type ShiftDetail,
 } from "./types"
 import { useRegisters } from "./use-current-shift"
+import { uuid } from "@/lib/uuid"
 
 export function PosScreen({ shift }: { shift: ShiftDetail }) {
   const searchRef = useRef<HTMLInputElement>(null)
@@ -139,7 +140,7 @@ export function PosScreen({ shift }: { shift: ShiftDetail }) {
   // Bir to‘lov urinishi uchun bitta idempotencyKey; savat o‘zgarsa yangisi.
   const getKey = () => {
     const sig = JSON.stringify([customer?.id, pricedLines.map((l) => [l.product.id, l.qty, l.discount])])
-    if (!keyRef.current || keyRef.current.sig !== sig) keyRef.current = { sig, key: crypto.randomUUID() }
+    if (!keyRef.current || keyRef.current.sig !== sig) keyRef.current = { sig, key: uuid() }
     return keyRef.current.key
   }
 

@@ -199,7 +199,15 @@ function PaymentBody({ lines, baseLines, discount, onDiscount, customer, getIdem
       onSuccess(receipt)
     },
     onError: (e) => {
-      let msg = e instanceof ApiError ? e.message : "To‘lovni yuborib bo‘lmadi. Internetni tekshiring."
+      // fetch tarmoq xatosi TypeError beradi; boshqa kutilmagan xatoni yashirmaymiz — sababi ko‘rinsin
+      const network = e instanceof TypeError && /fetch|network|load failed/i.test(e.message)
+      let msg =
+        e instanceof ApiError
+          ? e.message
+          : network
+            ? "Server bilan aloqa yo‘q. Internetni tekshirib, qayta urinib ko‘ring."
+            : `To‘lovni yuborib bo‘lmadi: ${e instanceof Error ? e.message : String(e)}`
+      if (!(e instanceof ApiError)) console.error("[payment]", e)
       if (e instanceof ApiError) {
         if (e.status === 409) msg = e.message || "Qoldiq yetarli emas yoki smena ochiq emas"
         else if (e.status === 403) msg = e.message || "Bu amalga ruxsat yo‘q"
