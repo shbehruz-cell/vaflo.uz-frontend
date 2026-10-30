@@ -1,26 +1,190 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@custom-variant dark (&:is(.dark *));
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-sans);
   --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-sans);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-brand-from: var(--brand-from);
+  --color-brand-to: var(--brand-to);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* Brand: logo gradient #8C1DFB -> #3E02CC -> #170291 */
+:root {
+  /* Kassa cheki (POS savati va chek) */
+  --receipt: oklch(0.962 0.01 290);
+  --receipt-rule: oklch(0.82 0.012 290);
+  --dialog-footer: oklch(0.975 0.005 290);
+  --brand-from: oklch(0.549 0.282 297.9);
+  --brand-to: oklch(0.411 0.25 278.3);
+  --background: oklch(0.97 0.006 290);
+  --foreground: oklch(0.2 0.02 285);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.2 0.02 285);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.2 0.02 285);
+  --primary: oklch(0.471 0.268 284.9);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.965 0.012 290);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.975 0.005 290);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.955 0.03 293);
+  --accent-foreground: oklch(0.411 0.25 278.3);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.91 0.01 290);
+  --input: oklch(0.89 0.012 290);
+  --ring: oklch(0.471 0.268 284.9 / 55%);
+  --chart-1: oklch(0.471 0.268 284.9);
+  --chart-2: oklch(0.68 0.17 297);
+  --chart-3: oklch(0.6 0.02 270);
+  --chart-4: oklch(0.78 0.12 75);
+  --chart-5: oklch(0.62 0.18 25);
+  --radius: 0.75rem;
+  --sidebar: oklch(0.985 0.004 290);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.471 0.268 284.9);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.955 0.03 293);
+  --sidebar-accent-foreground: oklch(0.411 0.25 278.3);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.471 0.268 284.9 / 55%);
+}
+
+.dark {
+  --receipt: oklch(0.245 0.02 285);
+  --receipt-rule: oklch(0.4 0.02 285);
+  --dialog-footer: oklch(0.215 0.017 285);
+  --background: oklch(0.155 0.012 285);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.195 0.016 285);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.195 0.016 285);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.66 0.2 295);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.26 0.02 285);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.235 0.018 285);
+  --muted-foreground: oklch(0.72 0.02 285);
+  --accent: oklch(0.3 0.09 285);
+  --accent-foreground: oklch(0.9 0.06 295);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(0.9 0.03 285 / 11%);
+  --input: oklch(0.9 0.03 285 / 16%);
+  --ring: oklch(0.66 0.2 295 / 55%);
+  --chart-1: oklch(0.66 0.2 295);
+  --chart-2: oklch(0.5 0.22 284);
+  --chart-3: oklch(0.65 0.02 270);
+  --chart-4: oklch(0.8 0.12 75);
+  --chart-5: oklch(0.68 0.17 25);
+  --sidebar: oklch(0.195 0.016 285);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.66 0.2 295);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.3 0.09 285);
+  --sidebar-accent-foreground: oklch(0.9 0.06 295);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.66 0.2 295 / 55%);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+  /* Pul va miqdorlar ustunlarda tekis tursin */
+  .tabular-nums, td, [data-slot="table-cell"] {
+    font-variant-numeric: tabular-nums;
   }
 }
+html { scroll-behavior: smooth; color-scheme: light; }
+html.dark { color-scheme: dark; }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Native <select> ochilgan ro'yxati tungi rejimda ham tema ranglarida bo'lsin */
+select option,
+select optgroup {
+  background-color: var(--popover);
+  color: var(--popover-foreground);
+}
+
+/* Scrollbar chiziqlari ko'rinmaydi — scroll (g'ildirak, sensor, klaviatura) ishlayveradi */
+* {
+  scrollbar-width: none;
+}
+*::-webkit-scrollbar {
+  display: none;
+}
+
+/* Dialog footer: aralashtirilmagan aniq rang (ba'zi brauzerlarda color-mix qizg'ish chiqardi).
+   Uzun (scroll bo'ladigan) dialoglarda tugmalar pastga yopishib turadi. */
+[data-slot="dialog-content"] [data-slot="dialog-footer"] {
+  background-color: var(--dialog-footer);
+  background-image: none;
+}
+[data-slot="dialog-content"].overflow-y-auto [data-slot="dialog-footer"] {
+  position: sticky;
+  bottom: -1rem;
+  z-index: 1;
+}
+
+/* ── Kassa cheki uslubi: faqat pul ko'rinadigan joylarda (POS savati jami, chek) ── */
+.receipt {
+  position: relative;
+  background: var(--receipt);
+  --tooth: 7px;
+  /* pastki tishli chekka */
+  -webkit-mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / calc(var(--tooth) * 2) 100%;
+  mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / calc(var(--tooth) * 2) 100%;
+  padding-bottom: calc(var(--tooth) + 0.75rem);
+}
+.receipt-rule {
+  border: 0;
+  border-top: 1.5px dashed var(--receipt-rule);
 }
