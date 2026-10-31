@@ -3,6 +3,7 @@
 import * as React from "react"
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog"
 import { cn } from "@/lib/utils"
+import { isFinePointer } from "@/lib/pointer"
 
 import { Button } from "@/components/ui/button"
 import { XIcon } from "lucide-react"
@@ -47,14 +48,18 @@ function DialogContent({
 }: DialogPrimitive.Popup.Props & {
   showCloseButton?: boolean
 }) {
+  const popupRef = React.useRef<HTMLDivElement>(null)
   return (
     <DialogPortal>
       <DialogOverlay />
       <DialogPrimitive.Popup
         data-slot="dialog-content"
+        // Telefon/planshetda fokus input’ga emas, oynaning o‘ziga — ekran klaviaturasi o‘zi ochilib ketmasin
+        ref={popupRef}
+        initialFocus={(type) => (type === "touch" || !isFinePointer() ? popupRef.current : true)}
         className={cn(
           // Telefonda — pastdan chiqadigan oyna (mobil ilovalardagidek), sm dan boshlab — markazdagi dialog
-          "fixed inset-x-0 bottom-0 z-50 grid max-h-[92svh] w-full overflow-y-auto overscroll-contain gap-4 rounded-t-2xl bg-popover p-4 pb-[max(1rem,env(safe-area-inset-bottom))] text-sm text-popover-foreground ring-1 ring-foreground/10 duration-200 outline-none data-open:animate-in data-open:slide-in-from-bottom data-closed:animate-out data-closed:slide-out-to-bottom",
+          "fixed inset-x-0 bottom-[var(--vv-bottom,0px)] z-50 grid max-h-[calc(var(--vv-height,100svh)-1.5rem)] w-full overflow-y-auto overscroll-contain gap-4 rounded-t-2xl bg-popover p-4 pb-[max(1rem,env(safe-area-inset-bottom))] text-sm text-popover-foreground ring-1 ring-foreground/10 duration-200 outline-none data-open:animate-in data-open:slide-in-from-bottom data-closed:animate-out data-closed:slide-out-to-bottom",
           "before:mx-auto before:-mt-1 before:-mb-2 before:block before:h-1.5 before:w-10 before:rounded-full before:bg-muted-foreground/30",
           "sm:inset-x-auto sm:top-1/2 sm:bottom-auto sm:left-1/2 sm:max-h-[calc(100svh-2rem)] sm:max-w-sm sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-xl sm:pb-4 sm:duration-100 sm:before:hidden sm:data-open:slide-in-from-bottom-0 sm:data-open:fade-in-0 sm:data-open:zoom-in-95 sm:data-closed:slide-out-to-bottom-0 sm:data-closed:fade-out-0 sm:data-closed:zoom-out-95",
           className

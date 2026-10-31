@@ -71,7 +71,7 @@ export function FilterBar({
             </SheetTrigger>
             <SheetContent
               side={isMobile ? "bottom" : "right"}
-              className={isMobile ? "max-h-[85svh] gap-0 rounded-t-2xl" : "w-full gap-0 sm:max-w-sm"}
+              className={isMobile ? "max-h-[calc(var(--vv-height,100svh)*0.85)] gap-0 rounded-t-2xl" : "w-full gap-0 sm:max-w-sm"}
             >
               {isMobile && <div aria-hidden className="mx-auto mt-2 h-1.5 w-10 shrink-0 rounded-full bg-muted-foreground/30" />}
               <SheetHeader>

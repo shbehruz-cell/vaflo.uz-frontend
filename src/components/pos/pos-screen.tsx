@@ -299,7 +299,7 @@ export function PosScreen({ shift }: { shift: ShiftDetail }) {
         <SheetContent
           side="bottom"
           showCloseButton={false}
-          className="max-h-[90svh] gap-0 rounded-t-2xl px-4 pt-2 pb-[max(1rem,env(safe-area-inset-bottom))] sm:max-w-none"
+          className="max-h-[calc(var(--vv-height,100svh)*0.9)] gap-0 rounded-t-2xl px-4 pt-2 pb-[max(1rem,env(safe-area-inset-bottom))] sm:max-w-none"
         >
           <div aria-hidden className="mx-auto mb-2 h-1.5 w-10 shrink-0 rounded-full bg-muted-foreground/30" />
           <SheetHeader className="sr-only">

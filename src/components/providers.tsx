@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip"
 import { Toaster } from "@/components/ui/sonner"
 import { AuthProvider } from "@/lib/auth"
 import { ApiError } from "@/lib/api"
+import { ViewportSync } from "@/components/app/viewport-sync"
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [client] = useState(
@@ -30,6 +31,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
           <TooltipProvider>
             {children}
             <Toaster richColors position="top-center" />
+            <ViewportSync />
           </TooltipProvider>
         </AuthProvider>
       </QueryClientProvider>

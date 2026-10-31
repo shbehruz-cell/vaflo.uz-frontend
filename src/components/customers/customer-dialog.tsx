@@ -1,5 +1,6 @@
 "use client"
 
+import { isFinePointer } from "@/lib/pointer"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
@@ -88,7 +89,7 @@ export function CustomerDialog({
           <FieldGroup>
             <Field>
               <FieldLabel htmlFor="c-name">Ism *</FieldLabel>
-              <Input id="c-name" name="name" className="h-10" defaultValue={customer?.name ?? ""} autoFocus />
+              <Input id="c-name" name="name" className="h-10" defaultValue={customer?.name ?? ""} autoFocus={isFinePointer()} />
             </Field>
             <Field>
               <FieldLabel htmlFor="c-phone">Telefon</FieldLabel>

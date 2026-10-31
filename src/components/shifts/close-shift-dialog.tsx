@@ -1,5 +1,6 @@
 "use client"
 
+import { isFinePointer } from "@/lib/pointer"
 import { useState } from "react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
@@ -71,7 +72,7 @@ export function CloseShiftDialog({ shift }: { shift: ShiftDetail }) {
               <FieldLabel htmlFor="counted">Sanalgan naqd (so‘m)</FieldLabel>
               <Input
                 id="counted"
-                autoFocus
+                autoFocus={isFinePointer()}
                 inputMode="decimal"
                 className="h-12 text-right text-xl tabular-nums"
                 value={counted}

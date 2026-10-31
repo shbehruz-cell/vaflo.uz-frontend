@@ -187,6 +187,7 @@ function MoneyInput({
         id={id}
         autoFocus={autoFocus}
         inputMode="decimal"
+        enterKeyHint="done"
         autoComplete="off"
         aria-invalid={invalid || undefined}
         className={cn(
@@ -369,6 +370,7 @@ function PaymentBody({
           </InputGroupAddon>
           <InputGroupInput
             id="terminal-ref"
+            enterKeyHint="done"
             maxLength={32}
             autoComplete="off"
             placeholder="Masalan: 004512"
@@ -472,6 +474,15 @@ function PaymentBody({
         onSubmit={(e) => {
           e.preventDefault();
           submit();
+        }}
+        onKeyDown={(e) => {
+          // Telefon/planshet: klaviaturadagi "Go/Enter" sotuvni yakunlamaydi — faqat klaviaturani yopadi.
+          // Sotuv faqat "Tasdiqlash" tugmasini aniq bosish bilan. Kompyuterda Enter ishlayveradi.
+          const t = e.target as HTMLElement;
+          if (e.key === "Enter" && !autoFocusMoney && t.tagName === "INPUT") {
+            e.preventDefault();
+            t.blur();
+          }
         }}
       >
         {/* To‘lov usuli */}

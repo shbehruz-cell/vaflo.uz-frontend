@@ -79,7 +79,7 @@ export function ReceiptBody({ r, className }: { r: Receipt; className?: string }
 export function ReceiptDialog({ receipt, onNewSale }: { receipt: Receipt | null; onNewSale: () => void }) {
   return (
     <Dialog open={!!receipt} onOpenChange={(o) => !o && onNewSale()}>
-      <DialogContent className="max-h-[92svh] overflow-y-auto sm:max-w-sm print:hidden">
+      <DialogContent className="overflow-y-auto sm:max-w-sm print:hidden">
         <DialogHeader>
           <DialogTitle>Sotuv yakunlandi</DialogTitle>
           <DialogDescription>Chekni chop eting yoki yangi sotuvni boshlang.</DialogDescription>

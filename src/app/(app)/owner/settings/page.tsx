@@ -1,5 +1,6 @@
 "use client"
 
+import { isFinePointer } from "@/lib/pointer"
 import { useEffect, useMemo, useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Clock, Inbox, Monitor, Phone, Plus, Store as StoreIcon, Warehouse as WarehouseIcon } from "lucide-react"
@@ -289,7 +290,7 @@ function AddDialog({ kind, onClose, warehouses }: { kind: "warehouse" | "registe
           <FieldGroup>
             <Field>
               <FieldLabel htmlFor="add-name">Nomi</FieldLabel>
-              <Input id="add-name" className="h-10" autoFocus required maxLength={100} placeholder={isWh ? "Masalan: Asosiy ombor" : "Masalan: Kassa 2"} value={name} onChange={(e) => setName(e.target.value)} />
+              <Input id="add-name" className="h-10" autoFocus={isFinePointer()} required maxLength={100} placeholder={isWh ? "Masalan: Asosiy ombor" : "Masalan: Kassa 2"} value={name} onChange={(e) => setName(e.target.value)} />
             </Field>
             <Field>
               <FieldLabel htmlFor="add-code">Kod</FieldLabel>

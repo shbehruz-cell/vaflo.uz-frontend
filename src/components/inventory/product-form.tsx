@@ -1,5 +1,6 @@
 "use client"
 
+import { isFinePointer } from "@/lib/pointer"
 import { useState } from "react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { Plus, X } from "lucide-react"
@@ -34,7 +35,7 @@ export function ProductFormDialog({
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+      <DialogContent className="overflow-y-auto sm:max-h-[90vh] sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{product ? "Mahsulotni tahrirlash" : "Mahsulot qo‘shish"}</DialogTitle>
           <DialogDescription>* belgisi majburiy maydonlarni bildiradi.</DialogDescription>
@@ -174,7 +175,7 @@ function Body({ product, onDone, onCancel }: { product: Product | null; onDone: 
       <FieldGroup>
         <Field data-invalid={!!errors.name || undefined}>
           <FieldLabel htmlFor="pf-name">Nomi *</FieldLabel>
-          <Input id="pf-name" className="h-10" value={name} onChange={(e) => setName(e.target.value)} aria-invalid={!!errors.name || undefined} autoFocus />
+          <Input id="pf-name" className="h-10" value={name} onChange={(e) => setName(e.target.value)} aria-invalid={!!errors.name || undefined} autoFocus={isFinePointer()} />
           {errors.name && <FieldError>{errors.name}</FieldError>}
         </Field>
 

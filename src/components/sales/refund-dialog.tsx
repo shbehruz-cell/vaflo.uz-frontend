@@ -82,7 +82,7 @@ export function RefundDialog({ sale, className }: { sale: SaleDetail; className?
         <DialogTrigger render={<Button variant="outline" className={className} />}>
           <Undo2 /> Qaytarish
         </DialogTrigger>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+        <DialogContent className="overflow-y-auto sm:max-h-[90vh] sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>Qaytarish — chek № {sale.receiptNo}</DialogTitle>
             <DialogDescription>Qaytariladigan mahsulot miqdorini kiriting. Yakuniy summani server hisoblaydi.</DialogDescription>
