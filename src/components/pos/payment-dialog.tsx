@@ -265,10 +265,10 @@ function PaymentBody({ lines, baseLines, discount, onDiscount, customer, getIdem
 
       {/* Jami summa */}
       <div className="rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3.5">
-        <div className="flex items-end justify-between gap-3">
+        <div className="flex flex-wrap items-end justify-between gap-x-3 gap-y-2">
           <div className="min-w-0">
             <div className="text-xs font-medium text-muted-foreground">To‘lanadigan summa</div>
-            <div className="mt-0.5 text-3xl font-bold tracking-tight text-primary tabular-nums sm:text-4xl">{formatMoney(som(total))}</div>
+            <div className="mt-0.5 text-3xl font-bold tracking-tight whitespace-nowrap text-primary tabular-nums sm:text-4xl">{formatMoney(som(total))}</div>
           </div>
           <div className="flex shrink-0 flex-col items-end gap-1 text-xs text-muted-foreground">
             {math.discount > 0 && <div className="line-through tabular-nums">{formatMoney(som(math.subtotal))}</div>}
@@ -466,11 +466,11 @@ function PaymentBody({ lines, baseLines, discount, onDiscount, customer, getIdem
           </p>
         )}
 
-        <Button type="submit" size="lg" className="h-12 w-full justify-between rounded-xl px-4 text-base" disabled={!canSubmit || pay.isPending}>
+        <Button type="submit" size="lg" className="h-12 w-full justify-center rounded-xl px-4 text-base pointer-fine:justify-between" disabled={!canSubmit || pay.isPending}>
           <span className="flex items-center gap-2">
             {pay.isPending ? <Spinner /> : <Check />} To‘lovni tasdiqlash
           </span>
-          <Kbd className="bg-primary-foreground/15 text-primary-foreground">Enter</Kbd>
+          <Kbd className="hidden bg-primary-foreground/15 text-primary-foreground pointer-fine:inline-flex">Enter</Kbd>
         </Button>
       </form>
     </>

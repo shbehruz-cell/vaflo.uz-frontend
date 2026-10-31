@@ -208,7 +208,7 @@ export function PosScreen({ shift }: { shift: ShiftDetail }) {
               autoComplete="off"
               className="h-12 pr-12 pl-9 text-base"
             />
-            <Kbd className="absolute top-1/2 right-3 -translate-y-1/2">F2</Kbd>
+            <Kbd className="absolute top-1/2 right-3 hidden -translate-y-1/2 pointer-fine:inline-flex">F2</Kbd>
           </div>
 
           <div className="lg:-mx-1 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:overscroll-contain lg:px-1 lg:pb-1">
@@ -283,7 +283,12 @@ export function PosScreen({ shift }: { shift: ShiftDetail }) {
         </Button>
       </div>
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent side="bottom" className="h-[88svh] p-3 sm:max-w-none">
+        <SheetContent
+          side="bottom"
+          showCloseButton={false}
+          className="max-h-[90svh] gap-0 rounded-t-2xl px-4 pt-2 pb-[max(1rem,env(safe-area-inset-bottom))] sm:max-w-none"
+        >
+          <div aria-hidden className="mx-auto mb-2 h-1.5 w-10 shrink-0 rounded-full bg-muted-foreground/30" />
           <SheetHeader className="sr-only">
             <SheetTitle>Savat</SheetTitle>
             <SheetDescription>Savatdagi mahsulotlar va to‘lov</SheetDescription>
@@ -294,6 +299,7 @@ export function PosScreen({ shift }: { shift: ShiftDetail }) {
             customer={customer}
             onCustomer={setCustomer}
             onPay={openPay}
+            onClose={() => setSheetOpen(false)}
           />
         </SheetContent>
       </Sheet>
