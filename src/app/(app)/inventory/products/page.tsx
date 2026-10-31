@@ -3,17 +3,19 @@
 import { Suspense, useEffect, useState } from "react"
 import Link from "next/link"
 import { useQuery } from "@tanstack/react-query"
-import { Archive, ClipboardList, FileSpreadsheet, MoreHorizontal, Pencil, Plus, RotateCcw, Search } from "lucide-react"
+import { Archive, ClipboardList, FileSpreadsheet, MoreHorizontal, Pencil, Plus, RotateCcw } from "lucide-react"
 import { ArchiveDialog } from "@/components/inventory/archive-dialog"
 import { ActiveBadge, NATIVE_SELECT, TABLE_CARD, THEAD, TROW, WARN_BADGE, useCategories, type Product } from "@/components/inventory/common"
 import { ProductFormDialog } from "@/components/inventory/product-form"
 import { ErrorState, EmptyState, LoadingRows } from "@/components/app/states"
-import { FilterBar } from "@/components/app/filter-bar"
+import { AddButton } from "@/components/app/add-button"
+import { FilterBar, FilterField, type FilterChip } from "@/components/app/filter-bar"
+import { PageHeader } from "@/components/app/page-header"
+import { SearchInput } from "@/components/app/search-input"
 import { PaginationBar } from "@/components/app/pagination-bar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { api, type Paginated } from "@/lib/api"
 import { useAuth } from "@/lib/auth"
@@ -121,65 +123,86 @@ function ProductsView() {
     </span>
   )
 
+  const statusLabels: Record<string, string> = { archived: "Arxiv", all: "Barchasi" }
+  const sortLabels: Record<string, string> = {
+    "name:desc": "Nomi (Z–A)",
+    "salePrice:asc": "Narx: arzondan",
+    "salePrice:desc": "Narx: qimmatdan",
+    "createdAt:desc": "Yangi qo‘shilganlar",
+  }
+  const chips: FilterChip[] = []
+  if (categoryId) {
+    chips.push({
+      key: "category",
+      label: `Kategoriya: ${categories?.find((c) => c.id === categoryId)?.name ?? "…"}`,
+      onRemove: () => set({ category: null, page: 1 }),
+    })
+  }
+  if (status !== "active") chips.push({ key: "status", label: `Holat: ${statusLabels[status] ?? status}`, onRemove: () => set({ status: null, page: 1 }) })
+  if (low) chips.push({ key: "low", label: "Faqat kam qolganlar", onRemove: () => set({ low: null, page: 1 }) })
+  if (sort !== "name:asc") chips.push({ key: "sort", label: `Saralash: ${sortLabels[sort] ?? sort}`, onRemove: () => set({ sort: null, page: 1 }) })
+
   return (
     <div className="space-y-4">
-      <div className="flex items-start justify-between gap-3 sm:items-end">
-        <div className="min-w-0">
-          <h1 className="text-2xl font-semibold tracking-tight">Mahsulotlar</h1>
-          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">Katalog, narxlar va ombor qoldig‘i</p>
-        </div>
-        {canManage && (
-          <div className="flex shrink-0 items-center gap-2">
-            <Button
-              variant="outline"
-              className="h-10 max-sm:w-10 max-sm:px-0"
-              aria-label="Excel/CSV’dan import"
-              render={<Link href="/inventory/products/import" />}
-              nativeButton={false}
-            >
-              <FileSpreadsheet /> <span className="hidden sm:inline">Excel/CSV’dan import</span>
-            </Button>
-            <Button className="h-10" onClick={openCreate}>
-              <Plus /> <span className="hidden sm:inline">Mahsulot qo‘shish</span>
-              <span className="sm:hidden">Qo‘shish</span>
-            </Button>
-          </div>
-        )}
-      </div>
+      <PageHeader
+        title="Mahsulotlar"
+        description="Katalog, narxlar va ombor qoldig‘i"
+        actions={
+          canManage && (
+            <>
+              <Button
+                variant="outline"
+                className="h-10 max-sm:w-10 max-sm:px-0"
+                aria-label="Excel/CSV’dan import"
+                render={<Link href="/inventory/products/import" />}
+                nativeButton={false}
+              >
+                <FileSpreadsheet /> <span className="hidden sm:inline">Excel/CSV’dan import</span>
+              </Button>
+              <AddButton label="Mahsulot qo‘shish" onClick={openCreate} />
+            </>
+          )
+        }
+      />
 
       <FilterBar
-        search={
-          <div className="relative">
-            <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input className="h-10 pl-8" placeholder="Nomi, SKU yoki shtrix-kod" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Qidirish" />
-          </div>
-          }
-        activeCount={[categoryId, low, status !== "active", sort !== "name:asc"].filter(Boolean).length}
+        search={<SearchInput value={q} onChange={setQ} placeholder="Nomi, SKU yoki shtrix-kod" aria-label="Qidirish" />}
+        activeCount={chips.length}
+        chips={chips}
         onReset={() => set({ category: null, low: null, status: null, sort: null, page: 1 })}
       >
-        <select className={`${NATIVE_SELECT}`} aria-label="Kategoriya" value={categoryId} onChange={(e) => set({ category: e.target.value, page: 1 })}>
-          <option value="">Barcha kategoriyalar</option>
-          {categories?.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </select>
-        <select className={`${NATIVE_SELECT}`} aria-label="Holat" value={status} onChange={(e) => set({ status: e.target.value === "active" ? null : e.target.value, page: 1 })}>
-          <option value="active">Faol</option>
-          <option value="archived">Arxiv</option>
-          <option value="all">Barchasi</option>
-        </select>
-        <select className={`${NATIVE_SELECT}`} aria-label="Saralash" value={sort} onChange={(e) => set({ sort: e.target.value === "name:asc" ? null : e.target.value, page: 1 })}>
-          <option value="name:asc">Nomi (A–Z)</option>
-          <option value="name:desc">Nomi (Z–A)</option>
-          <option value="salePrice:asc">Narx: arzondan</option>
-          <option value="salePrice:desc">Narx: qimmatdan</option>
-          <option value="createdAt:desc">Yangi qo‘shilganlar</option>
-        </select>
-        <Button variant={low ? "default" : "outline"} className="h-10" aria-pressed={low} onClick={() => set({ low: low ? null : "1", page: 1 })}>
-          Faqat kam qolganlar
-        </Button>
+        <FilterField label="Kategoriya">
+          <select className={NATIVE_SELECT} value={categoryId} onChange={(e) => set({ category: e.target.value, page: 1 })}>
+            <option value="">Barcha kategoriyalar</option>
+            {categories?.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </FilterField>
+        <FilterField label="Holat">
+          <select className={NATIVE_SELECT} value={status} onChange={(e) => set({ status: e.target.value === "active" ? null : e.target.value, page: 1 })}>
+            <option value="active">Faol</option>
+            <option value="archived">Arxiv</option>
+            <option value="all">Barchasi</option>
+          </select>
+        </FilterField>
+        <FilterField label="Qoldiq">
+          <select className={NATIVE_SELECT} value={low ? "1" : ""} onChange={(e) => set({ low: e.target.value || null, page: 1 })}>
+            <option value="">Barchasi</option>
+            <option value="1">Faqat kam qolganlar</option>
+          </select>
+        </FilterField>
+        <FilterField label="Saralash">
+          <select className={NATIVE_SELECT} value={sort} onChange={(e) => set({ sort: e.target.value === "name:asc" ? null : e.target.value, page: 1 })}>
+            <option value="name:asc">Nomi (A–Z)</option>
+            <option value="name:desc">Nomi (Z–A)</option>
+            <option value="salePrice:asc">Narx: arzondan</option>
+            <option value="salePrice:desc">Narx: qimmatdan</option>
+            <option value="createdAt:desc">Yangi qo‘shilganlar</option>
+          </select>
+        </FilterField>
       </FilterBar>
 
       {isLoading ? (
@@ -193,7 +216,7 @@ function ProductsView() {
           action={canManage && !urlQ && !categoryId && !low ? <Button onClick={openCreate}><Plus /> Mahsulot qo‘shish</Button> : undefined}
         />
       ) : (
-        <>
+        <div className="space-y-4 pb-16 md:pb-0">
           <div className={`${TABLE_CARD} hidden md:block`}>
             <Table>
               <TableHeader className={THEAD}>
@@ -258,7 +281,7 @@ function ProductsView() {
           </div>
 
           <PaginationBar page={data.page} pages={data.pages} total={data.total} onPage={(n) => set({ page: n })} />
-        </>
+        </div>
       )}
 
       <ProductFormDialog open={formOpen} onOpenChange={setFormOpen} product={editing} />

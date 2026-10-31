@@ -1,15 +1,15 @@
 "use client"
 
-import { Suspense, useState } from "react"
+import { Suspense, useEffect, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { Braces } from "lucide-react"
-import { DateRangeFields, FilterBar } from "@/components/app/filter-bar"
+import { DateRangeFields, FilterBar, FilterField, type FilterChip } from "@/components/app/filter-bar"
+import { SearchInput } from "@/components/app/search-input"
 import { PageHeader } from "@/components/app/page-header"
 import { PaginationBar } from "@/components/app/pagination-bar"
 import { EmptyState, ErrorState, LoadingRows, NoAccess } from "@/components/app/states"
 import { NativeSelect } from "@/components/reports/native-select"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useUrlState } from "@/hooks/use-url-state"
@@ -112,46 +112,50 @@ function AuditLog() {
     set({ action: "", entityType: "", dateFrom: "", dateTo: "", page: "" })
   }
 
+  useEffect(() => {
+    const v = actionInput.trim()
+    if (v === action) return
+    const t = setTimeout(() => set({ action: v, page: "" }), 400)
+    return () => clearTimeout(t)
+  }, [actionInput, action, set])
+
+  const chips: FilterChip[] = []
+  if (entityType) chips.push({ key: "entityType", label: `Obyekt: ${entityType}`, onRemove: () => set({ entityType: "", page: "" }) })
+  if (dateFrom || dateTo) {
+    const d = (v: string) => (v ? `${v.slice(8, 10)}.${v.slice(5, 7)}` : "…")
+    chips.push({ key: "date", label: `Sana: ${d(dateFrom)}–${d(dateTo)}`, onRemove: () => set({ dateFrom: "", dateTo: "", page: "" }) })
+  }
+
   return (
     <div className="space-y-5">
       <PageHeader title="Audit jurnali" description="Tizimdagi muhim amallar tarixi. Yozuvlarni o‘zgartirib bo‘lmaydi." />
 
       <FilterBar
-        search={
-          <Input
-            aria-label="Amal prefiksi"
-            className="h-10"
-            placeholder="Amal kodi (masalan product.)"
-            value={actionInput}
-            onChange={(e) => setActionInput(e.target.value)}
-            onBlur={() => actionInput !== action && set({ action: actionInput.trim(), page: "" })}
-            onKeyDown={(e) => e.key === "Enter" && set({ action: actionInput.trim(), page: "" })}
-          />
-        }
-        activeCount={[action, entityType, dateFrom, dateTo].filter(Boolean).length}
+        search={<SearchInput aria-label="Amal prefiksi" placeholder="Amal kodi (masalan product.)" value={actionInput} onChange={setActionInput} />}
+        activeCount={chips.length}
+        chips={chips}
         onReset={reset}
       >
-        <NativeSelect
-          aria-label="Amal turi"
-          value={action}
-          onChange={(e) => {
-            setActionInput(e.target.value)
-            set({ action: e.target.value, page: "" })
-          }}
-          options={groupOptions}
-        />
-        <NativeSelect
-          aria-label="Obyekt turi"
-          value={entityType}
-          onChange={(e) => set({ entityType: e.target.value, page: "" })}
-          options={[{ value: "", label: "Barcha obyektlar" }, ...ENTITY_TYPES.map((t) => ({ value: t, label: t }))]}
-        />
-        <DateRangeFields
-          from={dateFrom}
-          to={dateTo}
-          onFrom={(v) => set({ dateFrom: v, page: "" })}
-          onTo={(v) => set({ dateTo: v, page: "" })}
-        />
+        <FilterField label="Amal turi">
+          <NativeSelect
+            value={action}
+            onChange={(e) => {
+              setActionInput(e.target.value)
+              set({ action: e.target.value, page: "" })
+            }}
+            options={groupOptions}
+          />
+        </FilterField>
+        <FilterField label="Obyekt turi">
+          <NativeSelect
+            value={entityType}
+            onChange={(e) => set({ entityType: e.target.value, page: "" })}
+            options={[{ value: "", label: "Barcha obyektlar" }, ...ENTITY_TYPES.map((t) => ({ value: t, label: t }))]}
+          />
+        </FilterField>
+        <FilterField label="Sana" group>
+          <DateRangeFields from={dateFrom} to={dateTo} onFrom={(v) => set({ dateFrom: v, page: "" })} onTo={(v) => set({ dateTo: v, page: "" })} />
+        </FilterField>
       </FilterBar>
 
       {q.isLoading ? (

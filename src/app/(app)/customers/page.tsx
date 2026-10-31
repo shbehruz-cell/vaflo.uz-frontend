@@ -4,12 +4,13 @@ import { Suspense, useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useQuery } from "@tanstack/react-query"
-import { Plus, Search } from "lucide-react"
+import { Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { TABLE_CARD, THEAD, TROW } from "@/components/inventory/common"
+import { AddButton } from "@/components/app/add-button"
 import { FilterBar } from "@/components/app/filter-bar"
+import { SearchInput } from "@/components/app/search-input"
 import { PageHeader } from "@/components/app/page-header"
 import { EmptyState, ErrorState, LoadingRows } from "@/components/app/states"
 import { PaginationBar } from "@/components/app/pagination-bar"
@@ -57,23 +58,9 @@ function CustomersContent() {
       <PageHeader
         title="Xaridorlar"
         description="Doimiy xaridorlar bazasi"
-        className="flex-row items-center gap-3 sm:items-end"
-        actions={
-          can("customers.manage") && (
-            <Button className="h-10 md:h-8" onClick={() => setCreating(true)}>
-              <Plus /> <span className="hidden sm:inline">Xaridor qo‘shish</span><span className="sm:hidden">Qo‘shish</span>
-            </Button>
-          )
-        }
+        actions={can("customers.manage") && <AddButton label="Xaridor qo‘shish" onClick={() => setCreating(true)} />}
       />
-      <FilterBar
-        search={
-        <div className="relative lg:max-w-sm">
-          <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input className="h-10 pl-8" placeholder="Ism yoki telefon" aria-label="Qidirish" value={text} onChange={(e) => setText(e.target.value)} />
-        </div>
-        }
-      />
+      <FilterBar search={<SearchInput value={text} onChange={setText} placeholder="Ism yoki telefon" aria-label="Qidirish" />} />
 
       {q.isLoading ? (
         <LoadingRows />
@@ -92,7 +79,7 @@ function CustomersContent() {
           }
         />
       ) : (
-        <>
+        <div className="space-y-4 pb-16 md:pb-0">
           <div className="space-y-2 md:hidden">
             {q.data.items.map((c) => (
               <Link key={c.id} href={`/customers/${c.id}`} className="block">
@@ -131,7 +118,7 @@ function CustomersContent() {
             </Table>
           </div>
           <PaginationBar page={q.data.page} pages={q.data.pages} total={q.data.total} onPage={(p) => url.set({ page: p })} />
-        </>
+        </div>
       )}
       <CustomerDialog open={creating} onOpenChange={setCreating} />
     </div>

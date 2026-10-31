@@ -1,12 +1,14 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { Ban, KeyRound, Pencil, Plus, RefreshCw, Search, ShieldCheck } from "lucide-react"
+import { Ban, KeyRound, Pencil, RefreshCw, ShieldCheck } from "lucide-react"
 import { toast } from "sonner"
 import { EmptyState, ErrorState, LoadingRows } from "@/components/app/states"
 import { PaginationBar } from "@/components/app/pagination-bar"
-import { FilterBar } from "@/components/app/filter-bar"
+import { AddButton } from "@/components/app/add-button"
+import { FilterBar, FilterField, type FilterChip } from "@/components/app/filter-bar"
+import { SearchInput } from "@/components/app/search-input"
 import { NativeSelect } from "@/components/reports/native-select"
 import {
   AlertDialog,
@@ -84,6 +86,13 @@ export function UsersTab() {
   const status = get("status")
   const page = Number(get("page", "1")) || 1
   const [search, setSearch] = useState(q)
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (search.trim() !== q) set({ q: search.trim(), page: "" })
+    }, 400)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search])
   const [dialog, setDialog] = useState<Dialogs>(null)
   const [error, setError] = useState<string | null>(null)
   const [form, setForm] = useState({ name: "", login: "", password: "", roleId: "", status: "ACTIVE" as StaffUser["status"] })
@@ -154,43 +163,31 @@ export function UsersTab() {
 
   const target = dialog && dialog.type !== "create" ? dialog.user : null
 
+  const chips: FilterChip[] = status
+    ? [{ key: "status", label: `Holat: ${status === "ACTIVE" ? "Faol" : "Bloklangan"}`, onRemove: () => set({ status: "", page: "" }) }]
+    : []
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pb-16 md:pb-0">
       <FilterBar
-        search={
-          <form
-            className="relative"
-            onSubmit={(e) => {
-              e.preventDefault()
-              set({ q: search, page: "" })
-            }}
-          >
-            <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input value={search} onChange={(e) => setSearch(e.target.value)} onBlur={() => search !== q && set({ q: search, page: "" })} placeholder="Ism yoki login" className="h-10 pl-8" aria-label="Qidirish" />
-          </form>
-        }
-        activeCount={[q, status].filter(Boolean).length}
-        onReset={() => {
-          setSearch("")
-          set({ q: "", status: "", page: "" })
-        }}
-        actions={
-          <Button className="h-10 shrink-0 max-md:w-10 max-md:px-0" onClick={() => open({ type: "create" })} aria-label="Xodim qo‘shish">
-            <Plus /> <span className="hidden sm:inline">Xodim qo‘shish</span>
-          </Button>
-        }
+        search={<SearchInput value={search} onChange={setSearch} placeholder="Ism yoki login" aria-label="Qidirish" />}
+        activeCount={chips.length}
+        chips={chips}
+        onReset={() => set({ status: "", page: "" })}
+        actions={<AddButton label="Xodim qo‘shish" onClick={() => open({ type: "create" })} />}
       >
-        <NativeSelect
-          className="sm:w-44"
-          aria-label="Holat"
-          value={status}
-          onChange={(e) => set({ status: e.target.value, page: "" })}
-          options={[
-            { value: "", label: "Barcha holatlar" },
-            { value: "ACTIVE", label: "Faol" },
-            { value: "BLOCKED", label: "Bloklangan" },
-          ]}
-        />
+        <FilterField label="Holat">
+          <NativeSelect
+            className="w-full"
+            value={status}
+            onChange={(e) => set({ status: e.target.value, page: "" })}
+            options={[
+              { value: "", label: "Barcha holatlar" },
+              { value: "ACTIVE", label: "Faol" },
+              { value: "BLOCKED", label: "Bloklangan" },
+            ]}
+          />
+        </FilterField>
       </FilterBar>
 
       {users.isLoading ? (

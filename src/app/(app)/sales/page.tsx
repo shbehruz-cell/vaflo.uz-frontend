@@ -4,9 +4,10 @@ import { Suspense, useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useQuery } from "@tanstack/react-query"
-import { Banknote, ChevronRight, CreditCard, ReceiptText, Search, Shuffle, type LucideIcon } from "lucide-react"
+import { Banknote, ChevronRight, CreditCard, ReceiptText, Shuffle, type LucideIcon } from "lucide-react"
 import { Input } from "@/components/ui/input"
-import { DateRangeFields, FilterBar } from "@/components/app/filter-bar"
+import { DateRangeFields, FilterBar, FilterField, type FilterChip } from "@/components/app/filter-bar"
+import { SearchInput } from "@/components/app/search-input"
 import { EmptyState, ErrorState, LoadingRows } from "@/components/app/states"
 import { PaginationBar } from "@/components/app/pagination-bar"
 import { CustomerFilter } from "@/components/sales/customer-filter"
@@ -110,7 +111,24 @@ function SalesContent() {
   ]
   // Sana chiplari alohida ko‘rinadi — filtr panelidagi hisobga faqat qolgan filtrlar kiradi
   const customRange = (!!from || !!to) && !presets.some((p) => p.f === from && p.t === to)
-  const activeCount = Object.keys(url.all).filter((k) => !["page", "from", "to", "receiptNo"].includes(k)).length + (customRange ? 1 : 0)
+  const fmtShort = (d: string) => (d ? `${d.slice(8, 10)}.${d.slice(5, 7)}` : "…")
+  const chips: FilterChip[] = []
+  if (customRange) chips.push({ key: "range", label: `Sana: ${fmtShort(from)}–${fmtShort(to)}`, onRemove: () => url.set({ from: null, to: null, page: 1 }) })
+  if (barcode.trim() || url.get("barcode"))
+    chips.push({
+      key: "barcode",
+      label: `Shtrix-kod: ${barcode.trim().length > 6 ? barcode.trim().slice(0, 6) + "…" : barcode.trim()}`,
+      onRemove: () => {
+        setBarcode("")
+        url.set({ barcode: null, page: 1 })
+      },
+    })
+  if (customerId) chips.push({ key: "customerId", label: "Xaridor tanlangan", onRemove: () => url.set({ customerId: null, page: 1 }) })
+  if (cashierId) chips.push({ key: "cashierId", label: `Kassir: ${users.data?.items.find((u) => u.id === cashierId)?.name ?? "tanlangan"}`, onRemove: () => url.set({ cashierId: null, page: 1 }) })
+  if (registerId) chips.push({ key: "registerId", label: `Kassa: ${registers.data?.find((r) => r.id === registerId)?.name ?? "tanlangan"}`, onRemove: () => url.set({ registerId: null, page: 1 }) })
+  if (paymentMethod) chips.push({ key: "paymentMethod", label: `To‘lov: ${PAYMENT_LABELS[paymentMethod] ?? paymentMethod}`, onRemove: () => url.set({ paymentMethod: null, page: 1 }) })
+  if (status) chips.push({ key: "status", label: `Holat: ${SALE_STATUS_LABELS[status] ?? status}`, onRemove: () => url.set({ status: null, page: 1 }) })
+  const activeCount = chips.length
 
   return (
     <div className="space-y-3 sm:space-y-4">
@@ -145,85 +163,66 @@ function SalesContent() {
       </div>
 
       <FilterBar
-        collapsed
-        search={
-          <div className="relative">
-            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              className="h-10 pl-9"
-              placeholder="Chek raqami bo‘yicha qidirish"
-              aria-label="Chek raqami"
-              inputMode="numeric"
-              value={receipt}
-              onChange={(e) => setReceipt(e.target.value)}
-            />
-          </div>
-        }
+        search={<SearchInput value={receipt} onChange={setReceipt} placeholder="Chek raqami bo‘yicha qidirish" aria-label="Chek raqami" inputMode="numeric" />}
         activeCount={activeCount}
+        chips={chips}
         onReset={() => {
           setReceipt("")
           setBarcode("")
           router.replace("/sales")
         }}
       >
-          <label className="space-y-1 text-xs text-muted-foreground">
-            Mahsulot shtrix-kodi
-            <Input className="h-10" placeholder="Shtrix-kod" value={barcode} onChange={(e) => setBarcode(e.target.value)} />
-          </label>
-        <div className="space-y-1 text-xs text-muted-foreground">
-          Sana oralig‘i
+        <FilterField label="Mahsulot shtrix-kodi">
+          <Input className="h-10 w-full" placeholder="Shtrix-kod" value={barcode} onChange={(e) => setBarcode(e.target.value)} />
+        </FilterField>
+        <FilterField label="Sana oralig‘i" group>
           <DateRangeFields from={from} to={to} onFrom={(v) => url.set({ from: v, page: 1 })} onTo={(v) => url.set({ to: v, page: 1 })} />
-        </div>
-          <div className="space-y-1 text-xs text-muted-foreground">
-            Xaridor
-            <CustomerFilter customerId={customerId} onChange={(id) => url.set({ customerId: id, page: 1 })} />
-          </div>
-          {canUsers && (
-            <label className="space-y-1 text-xs text-muted-foreground">
-              Kassir
-              <NativeSelect value={cashierId} onChange={(e) => url.set({ cashierId: e.target.value, page: 1 })}>
-                <option value="">Barchasi</option>
-                {users.data?.items.map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {u.name}
-                  </option>
-                ))}
-              </NativeSelect>
-            </label>
-          )}
-          <label className="space-y-1 text-xs text-muted-foreground">
-            Kassa
-            <NativeSelect value={registerId} onChange={(e) => url.set({ registerId: e.target.value, page: 1 })}>
+        </FilterField>
+        <FilterField label="Xaridor" group>
+          <CustomerFilter customerId={customerId} onChange={(id) => url.set({ customerId: id, page: 1 })} />
+        </FilterField>
+        {canUsers && (
+          <FilterField label="Kassir">
+            <NativeSelect className="w-full" value={cashierId} onChange={(e) => url.set({ cashierId: e.target.value, page: 1 })}>
               <option value="">Barchasi</option>
-              {registers.data?.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.name}
+              {users.data?.items.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.name}
                 </option>
               ))}
             </NativeSelect>
-          </label>
-          <label className="space-y-1 text-xs text-muted-foreground">
-            To‘lov usuli
-            <NativeSelect value={paymentMethod} onChange={(e) => url.set({ paymentMethod: e.target.value, page: 1 })}>
-              <option value="">Barchasi</option>
-              {Object.entries(PAYMENT_LABELS).map(([k, v]) => (
-                <option key={k} value={k}>
-                  {v}
-                </option>
-              ))}
-            </NativeSelect>
-          </label>
-          <label className="space-y-1 text-xs text-muted-foreground">
-            Holat
-            <NativeSelect value={status} onChange={(e) => url.set({ status: e.target.value, page: 1 })}>
-              <option value="">Barchasi</option>
-              {Object.entries(SALE_STATUS_LABELS).map(([k, v]) => (
-                <option key={k} value={k}>
-                  {v}
-                </option>
-              ))}
-            </NativeSelect>
-          </label>
+          </FilterField>
+        )}
+        <FilterField label="Kassa">
+          <NativeSelect className="w-full" value={registerId} onChange={(e) => url.set({ registerId: e.target.value, page: 1 })}>
+            <option value="">Barchasi</option>
+            {registers.data?.map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.name}
+              </option>
+            ))}
+          </NativeSelect>
+        </FilterField>
+        <FilterField label="To‘lov usuli">
+          <NativeSelect className="w-full" value={paymentMethod} onChange={(e) => url.set({ paymentMethod: e.target.value, page: 1 })}>
+            <option value="">Barchasi</option>
+            {Object.entries(PAYMENT_LABELS).map(([k, v]) => (
+              <option key={k} value={k}>
+                {v}
+              </option>
+            ))}
+          </NativeSelect>
+        </FilterField>
+        <FilterField label="Holat">
+          <NativeSelect className="w-full" value={status} onChange={(e) => url.set({ status: e.target.value, page: 1 })}>
+            <option value="">Barchasi</option>
+            {Object.entries(SALE_STATUS_LABELS).map(([k, v]) => (
+              <option key={k} value={k}>
+                {v}
+              </option>
+            ))}
+          </NativeSelect>
+        </FilterField>
       </FilterBar>
 
       {q.isLoading ? (

@@ -168,8 +168,13 @@ export function RolesTab() {
             </button>
           ))}
           {isOwner && (
-            <Button variant="outline" className="h-11 shrink-0 max-lg:rounded-full lg:h-8 lg:w-full" onClick={() => { setCreateError(null); setCreateOpen(true) }}>
-              <Plus /> Yangi rol
+            <Button
+              variant="outline"
+              className="h-10 shrink-0 max-lg:rounded-full max-sm:w-10 max-sm:px-0 lg:w-full"
+              aria-label="Yangi rol"
+              onClick={() => { setCreateError(null); setCreateOpen(true) }}
+            >
+              <Plus /> <span className="hidden sm:inline">Yangi rol</span>
             </Button>
           )}
         </div>

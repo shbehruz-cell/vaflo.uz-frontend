@@ -4,7 +4,7 @@ import { Suspense, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { Download } from "lucide-react"
 import { toast } from "sonner"
-import { FilterBar } from "@/components/app/filter-bar"
+import { FilterBar, FilterField, type FilterChip } from "@/components/app/filter-bar"
 import { PageHeader } from "@/components/app/page-header"
 import { EmptyState, ErrorState, LoadingRows, NoAccess } from "@/components/app/states"
 import { NativeSelect } from "@/components/reports/native-select"
@@ -101,6 +101,11 @@ function Reports() {
   })
   const low = useQuery({ queryKey: ["reports", "low-stock"], queryFn: () => api.get<LowStock>("/reports/low-stock") })
 
+  const chips: FilterChip[] = []
+  if (registerId) chips.push({ key: "registerId", label: `Kassa: ${registers.data?.find((r) => r.id === registerId)?.name ?? "tanlangan"}`, onRemove: () => set({ registerId: null }) })
+  if (paymentMethod) chips.push({ key: "paymentMethod", label: `To‘lov: ${PAYMENT_LABELS[paymentMethod] ?? paymentMethod}`, onRemove: () => set({ paymentMethod: null }) })
+  if (categoryId) chips.push({ key: "categoryId", label: `Kategoriya: ${categories.data?.find((c) => c.id === categoryId)?.name ?? "tanlangan"}`, onRemove: () => set({ categoryId: null }) })
+
   async function exportCsv() {
     setExporting(true)
     try {
@@ -120,12 +125,13 @@ function Reports() {
       <div className="space-y-2.5">
         <PeriodFilter defaultPreset="month" />
         <FilterBar
-          activeCount={[registerId, paymentMethod, categoryId].filter(Boolean).length}
+          activeCount={chips.length}
+          chips={chips}
           onReset={() => set({ registerId: null, paymentMethod: null, categoryId: null })}
           actions={
             <Button
               variant="outline"
-              className="h-10 shrink-0 max-md:w-10 max-md:px-0"
+              className="h-11 shrink-0 max-sm:w-11 max-sm:px-0 md:h-10"
               aria-label="CSV yuklab olish"
               onClick={() => void exportCsv()}
               disabled={!ready || exporting}
@@ -135,27 +141,30 @@ function Reports() {
             </Button>
           }
         >
-          <NativeSelect
+          <FilterField label="Kassa">
+            <NativeSelect
             aria-label="Kassa"
-            className="md:w-48"
             value={registerId}
             onChange={(e) => set({ registerId: e.target.value })}
             options={[{ value: "", label: "Barcha kassalar" }, ...(registers.data ?? []).map((r) => ({ value: r.id, label: r.name }))]}
           />
-          <NativeSelect
+          </FilterField>
+          <FilterField label="To‘lov usuli">
+            <NativeSelect
             aria-label="To‘lov usuli"
-            className="md:w-56"
             value={paymentMethod}
             onChange={(e) => set({ paymentMethod: e.target.value })}
             options={[{ value: "", label: "Barcha to‘lov usullari" }, ...Object.entries(PAYMENT_LABELS).map(([value, label]) => ({ value, label }))]}
           />
-          <NativeSelect
+          </FilterField>
+          <FilterField label="Kategoriya">
+            <NativeSelect
             aria-label="Kategoriya"
-            className="md:w-52"
             value={categoryId}
             onChange={(e) => set({ categoryId: e.target.value })}
             options={[{ value: "", label: "Barcha kategoriyalar" }, ...(categories.data ?? []).map((c) => ({ value: c.id, label: c.name }))]}
           />
+          </FilterField>
         </FilterBar>
       </div>
 

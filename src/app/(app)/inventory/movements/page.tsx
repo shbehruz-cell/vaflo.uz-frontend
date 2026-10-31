@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query"
 import { X } from "lucide-react"
 import { MOVEMENT_LABELS, MovementBadge, NATIVE_SELECT, ProductPicker, TABLE_CARD, THEAD, TROW, REFERENCE_LABELS, useWarehouses, type Movement, type Product } from "@/components/inventory/common"
 import { EmptyState, ErrorState, LoadingRows } from "@/components/app/states"
-import { DateRangeFields, FilterBar } from "@/components/app/filter-bar"
+import { DateRangeFields, FilterBar, FilterField, type FilterChip } from "@/components/app/filter-bar"
 import { PageHeader } from "@/components/app/page-header"
 import { PaginationBar } from "@/components/app/pagination-bar"
 import { Button } from "@/components/ui/button"
@@ -62,41 +62,55 @@ function MovementsView() {
   )
   const source = (m: Movement) => (m.referenceType ? (REFERENCE_LABELS[m.referenceType] ?? m.referenceType) : "—")
 
+  const chips: FilterChip[] = []
+  if (warehouseId) chips.push({ key: "warehouse", label: `Ombor: ${warehouses?.find((w) => w.id === warehouseId)?.name ?? "…"}`, onRemove: () => set({ warehouse: null, page: 1 }) })
+  if (type) chips.push({ key: "type", label: `Tur: ${(MOVEMENT_LABELS as Record<string, string>)[type] ?? type}`, onRemove: () => set({ type: null, page: 1 }) })
+  if (from || to) {
+    const d = (v: string) => (v ? `${v.slice(8, 10)}.${v.slice(5, 7)}` : "…")
+    chips.push({ key: "date", label: `Sana: ${d(from)}–${d(to)}`, onRemove: () => set({ from: null, to: null, page: 1 }) })
+  }
+  if (productId) chips.push({ key: "product", label: `Mahsulot: ${productQ.data?.name ?? "…"}`, onRemove: () => set({ product: null, page: 1 }) })
+
   return (
     <div className="space-y-4">
       <PageHeader title="Ombor harakatlari" description="Kirim, chiqim va tuzatishlar tarixi" />
 
-      <FilterBar
-        activeCount={[warehouseId, type, productId, from, to].filter(Boolean).length}
-        onReset={() => set({ warehouse: null, type: null, product: null, from: null, to: null, page: 1 })}
-      >
-        <select className={NATIVE_SELECT} aria-label="Ombor" value={warehouseId} onChange={(e) => set({ warehouse: e.target.value, page: 1 })}>
-          <option value="">Barcha omborlar</option>
-          {warehouses?.map((w) => (
-            <option key={w.id} value={w.id}>
-              {w.name}
-            </option>
-          ))}
-        </select>
-        <select className={NATIVE_SELECT} aria-label="Tur" value={type} onChange={(e) => set({ type: e.target.value, page: 1 })}>
-          <option value="">Barcha turlar</option>
-          {Object.entries(MOVEMENT_LABELS).map(([k, v]) => (
-            <option key={k} value={k}>
-              {v}
-            </option>
-          ))}
-        </select>
-        <DateRangeFields from={from} to={to} onFrom={(v) => set({ from: v, page: 1 })} onTo={(v) => set({ to: v, page: 1 })} />
-        {productId ? (
-          <div className="flex h-10 items-center justify-between gap-2 rounded-lg border px-2.5 text-sm">
-            <span className="truncate">{productQ.data?.name ?? "Mahsulot…"}</span>
-            <Button variant="ghost" size="icon-sm" className="max-md:size-9" aria-label="Mahsulot filtrini olib tashlash" onClick={() => set({ product: null, page: 1 })}>
-              <X />
-            </Button>
-          </div>
-        ) : (
-          <ProductPicker label="Mahsulot bo‘yicha" onPick={(p) => set({ product: p.id, page: 1 })} />
-        )}
+      <FilterBar activeCount={chips.length} chips={chips} onReset={() => set({ warehouse: null, type: null, product: null, from: null, to: null, page: 1 })}>
+        <FilterField label="Ombor">
+          <select className={NATIVE_SELECT} value={warehouseId} onChange={(e) => set({ warehouse: e.target.value, page: 1 })}>
+            <option value="">Barcha omborlar</option>
+            {warehouses?.map((w) => (
+              <option key={w.id} value={w.id}>
+                {w.name}
+              </option>
+            ))}
+          </select>
+        </FilterField>
+        <FilterField label="Tur">
+          <select className={NATIVE_SELECT} value={type} onChange={(e) => set({ type: e.target.value, page: 1 })}>
+            <option value="">Barcha turlar</option>
+            {Object.entries(MOVEMENT_LABELS).map(([k, v]) => (
+              <option key={k} value={k}>
+                {v}
+              </option>
+            ))}
+          </select>
+        </FilterField>
+        <FilterField label="Sana" group>
+          <DateRangeFields from={from} to={to} onFrom={(v) => set({ from: v, page: 1 })} onTo={(v) => set({ to: v, page: 1 })} />
+        </FilterField>
+        <FilterField label="Mahsulot" group>
+          {productId ? (
+            <div className="flex h-10 items-center justify-between gap-2 rounded-lg border px-2.5 text-sm font-normal">
+              <span className="truncate">{productQ.data?.name ?? "Mahsulot…"}</span>
+              <Button variant="ghost" size="icon-sm" className="max-md:size-9" aria-label="Mahsulot filtrini olib tashlash" onClick={() => set({ product: null, page: 1 })}>
+                <X />
+              </Button>
+            </div>
+          ) : (
+            <ProductPicker label="Mahsulot bo‘yicha" onPick={(p) => set({ product: p.id, page: 1 })} />
+          )}
+        </FilterField>
       </FilterBar>
 
       {isLoading ? (

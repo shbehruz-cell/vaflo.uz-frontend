@@ -1,17 +1,23 @@
 "use client"
 
-import { SlidersHorizontal } from "lucide-react"
+import { SlidersHorizontal, X } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
 
+export interface FilterChip {
+  key: string
+  label: string
+  onRemove: () => void
+}
+
 /**
- * Ro‘yxat sahifalari uchun filtr paneli.
- * Desktop: qidiruv + filtrlar bitta qatorda (paper surface).
- * Mobil: faqat qidiruv va ixcham "Filtr" tugmasi; filtrlar pastdan chiqadigan panelda —
- * shunda ekranning tepasini filtrlar egallamaydi, ro‘yxat darhol ko‘rinadi.
+ * Ro‘yxat sahifalari uchun yagona qidiruv + filtr qatori (barcha ekranlarda bir xil, ixcham):
+ * qidiruv maydoni, "Filtr" tugmasi (tanlanganlar soni bilan), qo‘shimcha amallar.
+ * Filtrlar panelda: telefonda pastdan, kompyuterda o‘ngdan chiqadi.
+ * Tanlangan filtrlar qator ostida chip ko‘rinishida — bittasini bosib olib tashlash mumkin.
  */
 export function FilterBar({
   search,
@@ -19,72 +25,99 @@ export function FilterBar({
   activeCount = 0,
   onReset,
   actions,
-  collapsed = false,
+  chips,
   className,
 }: {
-  /** Doim ko‘rinadigan qidiruv maydoni (ixtiyoriy) */
+  /** Doim ko‘rinadigan qidiruv maydoni (ixtiyoriy) — odatda <SearchInput /> */
   search?: React.ReactNode
-  /** Filtr boshqaruvlari (select, sana, toggle...) */
+  /** Filtr boshqaruvlari (select, sana, toggle...) — panel ichida ko‘rsatiladi */
   children?: React.ReactNode
-  /** Nechta filtr tanlangan — mobil tugmada ko‘rsatiladi */
+  /** Nechta filtr tanlangan — tugmada ko‘rsatiladi */
   activeCount?: number
   /** Barcha filtrlarni tozalash */
   onReset?: () => void
-  /** O‘ng tomondagi qo‘shimcha amallar (masalan, CSV) — mobilda tugma yonida */
+  /** O‘ng tomondagi qo‘shimcha amallar (masalan, CSV yuklab olish) */
   actions?: React.ReactNode
-  /** Desktopda ham ixcham ko‘rinish: qidiruv + "Filtr" tugmasi, filtrlar o‘ng panelda */
+  /** Tanlangan filtrlar (olib tashlanadigan chiplar) */
+  chips?: FilterChip[]
+  /** Eski API bilan moslik uchun — endi doim ixcham */
   collapsed?: boolean
   className?: string
 }) {
   const isMobile = useIsMobile()
-
-  if (!isMobile && !collapsed) {
-    return (
-      <div className={cn("flex flex-wrap items-center gap-2 rounded-2xl border bg-card p-3 [&>select]:w-auto [&>select]:min-w-44", className)}>
-        {search && <div className="min-w-56 flex-1">{search}</div>}
-        {children}
-        {onReset && activeCount > 0 && (
-          <Button variant="ghost" onClick={onReset}>
-            Tozalash
-          </Button>
-        )}
-        {actions && <div className="ml-auto flex items-center gap-2">{actions}</div>}
-      </div>
-    )
-  }
+  const active = activeCount > 0
 
   return (
-    <div className={cn("flex items-center gap-2", className)}>
-      {search && <div className="min-w-0 flex-1">{search}</div>}
-      {children && (
-        <Sheet>
-          <SheetTrigger
-            render={<Button variant="outline" className="h-10 shrink-0 gap-1.5 px-3" aria-label="Filtrlarni ochish" />}
-          >
-            <SlidersHorizontal />
-            {(!search || !isMobile) && "Filtr"}
-            {activeCount > 0 && (
-              <Badge className="h-5 min-w-5 rounded-full px-1.5 tabular-nums">{activeCount}</Badge>
-            )}
-          </SheetTrigger>
-          <SheetContent side={isMobile ? "bottom" : "right"} className={isMobile ? "max-h-[85svh] rounded-t-2xl" : "w-full sm:max-w-sm"}>
-            <SheetHeader>
-              <SheetTitle>Filtrlar</SheetTitle>
-              <SheetDescription>Ro‘yxat tanlangan filtrlar bo‘yicha darhol yangilanadi.</SheetDescription>
-            </SheetHeader>
-            <div className="grid content-start gap-3 overflow-y-auto px-4 [&>*]:w-full [&_.md\:flex]:grid">{children}</div>
-            <SheetFooter className="flex-row gap-2">
-              {onReset && (
-                <Button variant="outline" className="h-11 flex-1" onClick={onReset} disabled={activeCount === 0}>
-                  Tozalash
-                </Button>
-              )}
-              <SheetClose render={<Button className="h-11 flex-1" />}>Ko‘rsatish</SheetClose>
-            </SheetFooter>
-          </SheetContent>
-        </Sheet>
+    <div className={cn("space-y-2", className)}>
+      <div className="flex items-center gap-2">
+        {search && <div className="min-w-0 flex-1">{search}</div>}
+        {children && (
+          <Sheet>
+            <SheetTrigger
+              render={
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "h-11 shrink-0 gap-1.5 rounded-xl px-3 md:h-10",
+                    active && "border-primary/50 bg-primary/5 text-primary hover:bg-primary/10 hover:text-primary",
+                  )}
+                  aria-label={active ? `Filtrlar (${activeCount} ta tanlangan)` : "Filtrlarni ochish"}
+                />
+              }
+            >
+              <SlidersHorizontal />
+              <span className={cn(search && "hidden sm:inline")}>Filtr</span>
+              {active && <Badge className="h-5 min-w-5 rounded-full px-1.5 tabular-nums">{activeCount}</Badge>}
+            </SheetTrigger>
+            <SheetContent
+              side={isMobile ? "bottom" : "right"}
+              className={isMobile ? "max-h-[85svh] gap-0 rounded-t-2xl" : "w-full gap-0 sm:max-w-sm"}
+            >
+              {isMobile && <div aria-hidden className="mx-auto mt-2 h-1.5 w-10 shrink-0 rounded-full bg-muted-foreground/30" />}
+              <SheetHeader>
+                <SheetTitle>Filtrlar</SheetTitle>
+                <SheetDescription>Ro‘yxat tanlangan filtrlar bo‘yicha darhol yangilanadi.</SheetDescription>
+              </SheetHeader>
+              <div className="grid flex-1 content-start gap-4 overflow-y-auto px-4 pb-4 [&>*]:w-full [&_.md\:flex]:grid">{children}</div>
+              <SheetFooter className="flex-row gap-2 border-t pb-[max(1rem,env(safe-area-inset-bottom))]">
+                {onReset && (
+                  <Button variant="outline" className="h-11 flex-1" onClick={onReset} disabled={!active}>
+                    Tozalash
+                  </Button>
+                )}
+                <SheetClose render={<Button className="h-11 flex-1" />}>Ko‘rsatish</SheetClose>
+              </SheetFooter>
+            </SheetContent>
+          </Sheet>
+        )}
+        {actions}
+      </div>
+
+      {chips && chips.length > 0 && (
+        <div className="scroll-row -mx-4 items-center gap-1.5 px-4 sm:mx-0 sm:flex-wrap sm:px-0" aria-label="Tanlangan filtrlar">
+          {chips.map((c) => (
+            <button
+              key={c.key}
+              type="button"
+              onClick={c.onRemove}
+              aria-label={`${c.label} filtrini olib tashlash`}
+              className="flex h-8 shrink-0 items-center gap-1 rounded-full border border-primary/30 bg-primary/5 pr-2 pl-3 text-xs font-medium text-primary outline-none hover:bg-primary/10 focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              {c.label}
+              <X className="size-3.5" />
+            </button>
+          ))}
+          {onReset && chips.length > 1 && (
+            <button
+              type="button"
+              onClick={onReset}
+              className="h-8 shrink-0 rounded-full px-2 text-xs font-medium text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              Hammasini tozalash
+            </button>
+          )}
+        </div>
       )}
-      {actions}
     </div>
   )
 }
@@ -113,5 +146,27 @@ export function DateRangeFields({
         <input type="date" className={field} value={to} min={from || undefined} onChange={(e) => onTo(e.target.value)} />
       </label>
     </div>
+  )
+}
+
+/**
+ * Filtr panelidagi bitta maydon: ustida yorliq, ostida boshqaruv (select, input...).
+ * `group` — ichida o‘z yorlig‘i yoki tugmalari bor murakkab boshqaruv uchun (sana oralig‘i, xaridor tanlash):
+ * ichma-ich <label> bo‘lmasligi uchun guruh sifatida chiziladi.
+ */
+export function FilterField({ label, group, children }: { label: string; group?: boolean; children: React.ReactNode }) {
+  if (group) {
+    return (
+      <div role="group" aria-label={label} className="grid gap-1.5 text-sm font-medium">
+        <span>{label}</span>
+        {children}
+      </div>
+    )
+  }
+  return (
+    <label className="grid gap-1.5 text-sm font-medium">
+      {label}
+      {children}
+    </label>
   )
 }
