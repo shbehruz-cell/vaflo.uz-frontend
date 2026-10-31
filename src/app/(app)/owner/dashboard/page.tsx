@@ -8,16 +8,19 @@ import {
   BarChart3,
   Boxes,
   ChevronRight,
+  ClipboardList,
   Info,
   Package,
   Receipt,
   ScanBarcode,
+  Timer,
   UserRound,
+  Users,
   type LucideIcon,
 } from "lucide-react"
 import { PageHeader } from "@/components/app/page-header"
 import { EmptyState, ErrorState, LoadingRows, NoAccess } from "@/components/app/states"
-import { PeriodFilter, usePeriod } from "@/components/reports/period-filter"
+import { PeriodFilter, PRESET_OPTIONS, usePeriod } from "@/components/reports/period-filter"
 import { SalesChart } from "@/components/reports/sales-chart"
 import type { LowStock, SalesByDay, Summary, TopProducts } from "@/components/reports/types"
 import { Button } from "@/components/ui/button"
@@ -73,7 +76,7 @@ function QuickActions() {
   const actions = QUICK_ACTIONS.filter((a) => can(...a.permissions))
 
   return (
-    <Card className="rounded-2xl">
+    <Card className="hidden rounded-2xl md:flex">
       <CardHeader>
         <CardTitle>Tez amallar</CardTitle>
         <CardDescription>Ko‘p ishlatiladigan bo‘limlar</CardDescription>
@@ -121,6 +124,150 @@ function QuickActions() {
   )
 }
 
+// ---------- Mobil ko‘rinish (telefon ilovalari uslubida) ----------
+
+const WEEKDAYS = ["yakshanba", "dushanba", "seshanba", "chorshanba", "payshanba", "juma", "shanba"]
+const MONTHS = ["yanvar", "fevral", "mart", "aprel", "may", "iyun", "iyul", "avgust", "sentabr", "oktabr", "noyabr", "dekabr"]
+
+function MobileGreeting() {
+  const { user } = useAuth()
+  const now = new Date()
+  const h = now.getHours()
+  const hello = h < 5 ? "Xayrli tun" : h < 12 ? "Xayrli tong" : h < 18 ? "Xayrli kun" : "Xayrli kech"
+  const first = user?.name.split(" ")[0] ?? ""
+  return (
+    <div className="md:hidden">
+      <p className="text-sm text-muted-foreground">
+        {now.getDate()}-{MONTHS[now.getMonth()]}, {WEEKDAYS[now.getDay()]}
+      </p>
+      <h1 className="mt-0.5 text-2xl font-semibold tracking-tight">
+        {hello}, {first}
+      </h1>
+    </div>
+  )
+}
+
+/** Summani raqam va valyutaga ajratadi — katta raqam yonida "so‘m" kichikroq turadi. */
+function Money({ value, unitClassName }: { value: string | number | null | undefined; unitClassName?: string }) {
+  return (
+    <span className="tabular-nums">
+      {formatMoney(value, false)}
+      <span className={cn("ml-1 text-[0.55em] font-medium", unitClassName)}>so‘m</span>
+    </span>
+  )
+}
+
+function MobileKpis({ s, loading, profit, periodLabel }: { s?: Summary; loading: boolean; profit: boolean; periodLabel: string }) {
+  const cells: { label: string; value: string | null | undefined }[] = [
+    { label: "O‘rtacha chek", value: s?.averageReceipt },
+    { label: "Qaytarishlar", value: s?.refunds },
+    ...(profit
+      ? [
+          { label: "Yalpi foyda", value: s?.grossProfit },
+          { label: "Ombor qiymati", value: s?.inventoryValue },
+        ]
+      : []),
+  ]
+
+  return (
+    <div className="space-y-3 md:hidden">
+      {/* Asosiy karta: tanlangan davrdagi savdo */}
+      <section aria-label="Savdo" className="rounded-2xl bg-primary p-5 text-primary-foreground">
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-sm text-primary-foreground/75">Yalpi sotuv</span>
+          <span className="rounded-full bg-primary-foreground/15 px-2.5 py-0.5 text-xs font-medium">{periodLabel}</span>
+        </div>
+        {loading ? (
+          <Skeleton className="mt-2 h-10 w-48 bg-primary-foreground/20" />
+        ) : (
+          <div className="mt-1 truncate text-4xl leading-tight font-bold tracking-tight">
+            <Money value={s?.grossSales} unitClassName="text-primary-foreground/75" />
+          </div>
+        )}
+        <div className="mt-4 grid grid-cols-2 border-t border-primary-foreground/20 pt-3">
+          <div className="min-w-0 border-r border-primary-foreground/20 pr-3">
+            <div className="text-xs text-primary-foreground/75">Sof tushum</div>
+            {loading ? (
+              <Skeleton className="mt-1 h-6 w-24 bg-primary-foreground/20" />
+            ) : (
+              <div className="truncate text-lg font-semibold">
+                <Money value={s?.netRevenue} unitClassName="text-primary-foreground/75" />
+              </div>
+            )}
+          </div>
+          <div className="min-w-0 pl-4">
+            <div className="text-xs text-primary-foreground/75">Cheklar soni</div>
+            {loading ? (
+              <Skeleton className="mt-1 h-6 w-12 bg-primary-foreground/20" />
+            ) : (
+              <div className="text-lg font-semibold tabular-nums">{s?.receiptCount ?? 0}</div>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* Qo‘shimcha ko‘rsatkichlar: bitta qog‘oz yuzada, chiziqlar bilan */}
+      <section aria-label="Ko‘rsatkichlar" className="grid grid-cols-2 overflow-hidden rounded-2xl border bg-card">
+        {cells.map((c) => (
+          <div key={c.label} className="-mr-px -mb-px min-w-0 border-r border-b p-4">
+            <div className="text-xs text-muted-foreground">{c.label}</div>
+            {loading ? (
+              <Skeleton className="mt-1.5 h-6 w-24" />
+            ) : (
+              <div className="mt-0.5 truncate text-lg font-semibold tracking-tight">
+                <Money value={c.value} unitClassName="text-muted-foreground" />
+              </div>
+            )}
+          </div>
+        ))}
+      </section>
+    </div>
+  )
+}
+
+const SHORTCUTS: { href: string; label: string; icon: LucideIcon; permissions: PermissionCode[]; primary?: boolean }[] = [
+  { href: "/pos", label: "Kassa", icon: ScanBarcode, permissions: ["sales.create"], primary: true },
+  { href: "/inventory/products", label: "Mahsulotlar", icon: Boxes, permissions: ["products.read"] },
+  { href: "/sales", label: "Sotuvlar", icon: Receipt, permissions: ["sales.read.all", "sales.read.own"] },
+  { href: "/customers", label: "Xaridorlar", icon: UserRound, permissions: ["customers.read"] },
+  { href: "/reports", label: "Hisobotlar", icon: BarChart3, permissions: ["reports.read"] },
+  { href: "/shifts", label: "Smenalar", icon: Timer, permissions: ["shifts.manage", "shifts.read.all"] },
+  { href: "/inventory/movements", label: "Harakatlar", icon: ClipboardList, permissions: ["inventory.read"] },
+  { href: "/owner/users", label: "Xodimlar", icon: Users, permissions: ["users.manage", "roles.manage"] },
+]
+
+function MobileShortcuts() {
+  const { can } = useAuth()
+  const items = SHORTCUTS.filter((a) => can(...a.permissions))
+  if (!items.length) return null
+  return (
+    <section aria-labelledby="shortcuts-title" className="rounded-2xl border bg-card p-4 md:hidden">
+      <h2 id="shortcuts-title" className="text-base font-semibold">
+        Tez amallar
+      </h2>
+      <div className="mt-3 grid grid-cols-4 gap-x-2 gap-y-4">
+        {items.map((a) => (
+          <Link
+            key={a.href}
+            href={a.href}
+            className="group flex min-w-0 flex-col items-center gap-1.5 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <span
+              className={cn(
+                "flex size-12 items-center justify-center rounded-2xl transition-colors",
+                a.primary ? "bg-primary text-primary-foreground group-active:bg-primary/90" : "bg-primary/10 text-primary group-active:bg-primary/20",
+              )}
+            >
+              <a.icon className="size-5" />
+            </span>
+            <span className="w-full truncate text-center text-xs font-medium">{a.label}</span>
+          </Link>
+        ))}
+      </div>
+    </section>
+  )
+}
+
 function Dashboard() {
   const { can } = useAuth()
   const { query, ready } = usePeriod("today")
@@ -146,16 +293,22 @@ function Dashboard() {
   const s = summary.data
   const m = s?.methodology ?? {}
   const loading = summary.isLoading
+  const periodLabel = PRESET_OPTIONS.find((p) => p.value === query.preset)?.label ?? ""
 
   return (
-    <div className="space-y-6">
-      <PageHeader title="Boshqaruv paneli" description="Do‘kon ko‘rsatkichlari bir qarashda" />
+    <div className="space-y-5 md:space-y-6">
+      <MobileGreeting />
+      <div className="hidden md:block">
+        <PageHeader title="Boshqaruv paneli" description="Do‘kon ko‘rsatkichlari bir qarashda" />
+      </div>
       <PeriodFilter defaultPreset="today" />
 
       {summary.isError ? (
         <ErrorState error={summary.error} onRetry={() => void summary.refetch()} />
       ) : (
-        <div className="space-y-2">
+        <>
+          <MobileKpis s={s} loading={loading} profit={profit} periodLabel={periodLabel} />
+          <div className="hidden space-y-2 md:block">
           <div className="overflow-hidden rounded-2xl border bg-card">
             <div className="grid grid-cols-2 xl:grid-cols-4">
               <Kpi primary label="Yalpi sotuv" value={formatMoney(s?.grossSales)} hint={m.grossSales} loading={loading} />
@@ -171,9 +324,12 @@ function Dashboard() {
               )}
             </div>
           </div>
-          {profit && s?.profitNote && !loading && <p className="px-1 text-xs text-muted-foreground">{s.profitNote}</p>}
-        </div>
+          </div>
+          {profit && s?.profitNote && !loading && <p className="-mt-3 px-1 text-xs text-muted-foreground md:-mt-4">{s.profitNote}</p>}
+        </>
       )}
+
+      <MobileShortcuts />
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="rounded-2xl lg:col-span-2">
