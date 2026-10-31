@@ -48,7 +48,7 @@ export function CloseShiftDialog({ shift }: { shift: ShiftDetail }) {
         }
       }}
     >
-      <DialogTrigger render={<Button variant="destructive" />}>Smenani yopish</DialogTrigger>
+      <DialogTrigger render={<Button variant="destructive" className="h-11 w-full md:h-8 md:w-auto" />}>Smenani yopish</DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Smenani yopish</DialogTitle>

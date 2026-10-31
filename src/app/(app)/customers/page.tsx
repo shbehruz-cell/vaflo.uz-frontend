@@ -57,9 +57,10 @@ function CustomersContent() {
       <PageHeader
         title="Xaridorlar"
         description="Doimiy xaridorlar bazasi"
+        className="flex-row items-center gap-3 sm:items-end"
         actions={
           can("customers.manage") && (
-            <Button onClick={() => setCreating(true)}>
+            <Button className="h-10 md:h-8" onClick={() => setCreating(true)}>
               <Plus /> <span className="hidden sm:inline">Xaridor qo‘shish</span><span className="sm:hidden">Qo‘shish</span>
             </Button>
           )
@@ -95,8 +96,11 @@ function CustomersContent() {
           <div className="space-y-2 md:hidden">
             {q.data.items.map((c) => (
               <Link key={c.id} href={`/customers/${c.id}`} className="block">
-                <div className="rounded-xl border bg-card p-3">
-                  <div className="font-medium">{c.name}</div>
+                <div className="rounded-2xl border bg-card p-3 active:bg-muted/50">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="min-w-0 truncate font-medium">{c.name}</span>
+                    {c.totalSpent !== undefined && <span className="shrink-0 text-sm font-semibold tabular-nums">{formatMoney(c.totalSpent)}</span>}
+                  </div>
                   <div className="text-sm text-muted-foreground">{c.phone ?? "Telefon yo‘q"}</div>
                 </div>
               </Link>

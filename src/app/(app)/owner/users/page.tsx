@@ -16,7 +16,7 @@ function UsersAndRoles() {
     <div className="space-y-5">
       <PageHeader title="Xodimlar va rollar" description="Xodimlarni qo‘shing va har bir rolga ruxsatlarni sozlang." />
       <Tabs value={tab} onValueChange={(v) => set({ tab: v === "users" ? "" : String(v), q: "", status: "", page: "" })}>
-        <TabsList>
+        <TabsList className="max-md:h-10 max-md:w-full">
           <TabsTrigger value="users">Xodimlar</TabsTrigger>
           <TabsTrigger value="roles">Rollar</TabsTrigger>
         </TabsList>

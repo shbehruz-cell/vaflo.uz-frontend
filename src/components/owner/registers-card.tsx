@@ -71,7 +71,7 @@ export function RegistersList({ warehouseName }: { warehouseName: (id: string) =
                 <Monitor className="size-5" />
               </span>
               <div className="min-w-0">
-                <div className="flex items-center gap-2">
+                <div className="flex min-w-0 items-center gap-2">
                   <span className="truncate font-medium">{r.name}</span>
                   <Badge variant="outline" className="font-mono text-[11px]">
                     {r.code}
@@ -100,7 +100,7 @@ export function RegistersList({ warehouseName }: { warehouseName: (id: string) =
               )}
             </div>
 
-            <Button variant="outline" size="sm" className="h-9 self-start sm:self-center" onClick={() => setEditing(r)}>
+            <Button variant="outline" size="sm" className="h-10 w-full sm:w-auto sm:self-center md:h-9" onClick={() => setEditing(r)}>
               <Settings2 /> Sozlash
             </Button>
           </li>
@@ -159,7 +159,7 @@ function RegisterDialog({ register, onClose }: { register: RegisterRow; onClose:
           <FieldGroup>
             <Field>
               <FieldLabel htmlFor="reg-name">Nomi</FieldLabel>
-              <Input id="reg-name" required maxLength={100} value={name} onChange={(e) => setName(e.target.value)} />
+              <Input id="reg-name" className="h-10" required maxLength={100} value={name} onChange={(e) => setName(e.target.value)} />
             </Field>
 
             <Field data-invalid={maxInvalid || undefined}>
@@ -173,7 +173,7 @@ function RegisterDialog({ register, onClose }: { register: RegisterRow; onClose:
                 value={max}
                 onChange={(e) => setMax(e.target.value)}
                 aria-invalid={maxInvalid || undefined}
-                className="w-28"
+                className="h-10 w-28"
               />
               <FieldDescription>1 dan 20 gacha. Har bir kassir o‘z smenasini alohida ochadi va yopadi.</FieldDescription>
             </Field>
@@ -192,7 +192,7 @@ function RegisterDialog({ register, onClose }: { register: RegisterRow; onClose:
               ) : (
                 <div className="max-h-56 divide-y overflow-y-auto rounded-lg border bg-card">
                   {staff.data?.map((u) => (
-                    <label key={u.id} className="flex cursor-pointer items-center gap-3 px-3 py-2.5 hover:bg-muted/50">
+                    <label key={u.id} className="flex min-h-11 cursor-pointer items-center gap-3 px-3 py-2.5 hover:bg-muted/50">
                       <Checkbox checked={selected.has(u.id)} onCheckedChange={(v) => toggle(u.id, v === true)} />
                       <span className="min-w-0 flex-1 truncate text-sm">{u.name}</span>
                       <span className="text-xs text-muted-foreground">{u.role.name}</span>

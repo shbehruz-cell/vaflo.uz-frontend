@@ -79,7 +79,7 @@ export function RefundDialog({ sale }: { sale: SaleDetail }) {
   return (
     <>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogTrigger render={<Button variant="outline" />}>
+        <DialogTrigger render={<Button variant="outline" className="h-11 flex-1 md:h-8 md:flex-none" />}>
           <Undo2 /> Qaytarish
         </DialogTrigger>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">

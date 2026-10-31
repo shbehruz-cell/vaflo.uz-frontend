@@ -43,7 +43,7 @@ export function CashMovementDialog({ shiftId }: { shiftId: string }) {
         if (o) setError(null)
       }}
     >
-      <DialogTrigger render={<Button variant="outline" />}>Kassaga pul kiritish/chiqarish</DialogTrigger>
+      <DialogTrigger render={<Button variant="outline" className="h-11 w-full md:h-8 md:w-auto" />}>Kassaga pul kiritish/chiqarish</DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Kassa harakati</DialogTitle>

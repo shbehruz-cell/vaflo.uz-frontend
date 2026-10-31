@@ -30,8 +30,8 @@ export function DifferenceText({ value, className }: { value: string | number | 
 
 function Stat({ label, value, strong }: { label: string; value: React.ReactNode; strong?: boolean }) {
   return (
-    <div className="bg-card p-3">
-      <div className="text-xs text-muted-foreground">{label}</div>
+    <div className="min-w-0 bg-card p-3">
+      <div className="text-xs leading-tight text-muted-foreground">{label}</div>
       <div className={cn("mt-0.5 tabular-nums", strong ? "text-xl font-semibold" : "text-base font-medium")}>{value}</div>
     </div>
   )
@@ -45,7 +45,7 @@ export function ShiftStats({ shift }: { shift: ShiftDetail }) {
       <Stat label="Boshlang‘ich naqd" value={formatMoney(shift.openingCash)} />
       <Stat label="Naqd sotuvlar" value={formatMoney(s.cashSalesTotal)} />
       <Stat label="Karta sotuvlar" value={formatMoney(s.cardSalesTotal)} />
-      <Stat label="Qaytarishlar (naqd / karta)" value={`${formatMoney(s.cashRefundsTotal, false)} / ${formatMoney(s.cardRefundsTotal)}`} />
+      <Stat label="Qaytarishlar" value={<span className="flex flex-col text-sm md:block md:text-base"><span>{`${formatMoney(s.cashRefundsTotal, false)} / ${formatMoney(s.cardRefundsTotal)}`}</span><span className="text-[11px] font-normal text-muted-foreground md:hidden">naqd / karta</span></span>} />
       <Stat label="Kassaga kiritilgan" value={formatMoney(s.cashIn)} />
       <Stat label="Kassadan chiqarilgan" value={formatMoney(s.cashOut)} />
       <Stat label="Sotuvlar soni" value={s.saleCount + (s.voidedCount ? ` (+${s.voidedCount} bekor)` : "")} />

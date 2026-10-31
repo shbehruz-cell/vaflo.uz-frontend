@@ -9,7 +9,6 @@ import { ActiveBadge, NATIVE_SELECT, TABLE_CARD, THEAD, TROW, WARN_BADGE, useCat
 import { ProductFormDialog } from "@/components/inventory/product-form"
 import { ErrorState, EmptyState, LoadingRows } from "@/components/app/states"
 import { FilterBar } from "@/components/app/filter-bar"
-import { PageHeader } from "@/components/app/page-header"
 import { PaginationBar } from "@/components/app/pagination-bar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -82,7 +81,7 @@ function ProductsView() {
   const actions = (p: Product) =>
     (canManage || canAdjust) && (
       <DropdownMenu>
-        <DropdownMenuTrigger render={<Button variant="ghost" size="icon" aria-label="Amallar" />}>
+        <DropdownMenuTrigger render={<Button variant="ghost" size="icon" className="max-md:size-10" aria-label="Amallar" />}>
           <MoreHorizontal />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
@@ -124,22 +123,29 @@ function ProductsView() {
 
   return (
     <div className="space-y-4">
-      <PageHeader
-        title="Mahsulotlar"
-        description="Katalog, narxlar va ombor qoldig‘i"
-        actions={
-          canManage && (
-            <>
-              <Button variant="outline" className="h-10" render={<Link href="/inventory/products/import" />} nativeButton={false}>
-                <FileSpreadsheet /> <span className="hidden sm:inline">Excel/CSV’dan import</span><span className="sm:hidden">Import</span>
-              </Button>
-              <Button className="h-10" onClick={openCreate}>
-                <Plus /> <span className="hidden sm:inline">Mahsulot qo‘shish</span><span className="sm:hidden">Qo‘shish</span>
-              </Button>
-            </>
-          )
-        }
-      />
+      <div className="flex items-start justify-between gap-3 sm:items-end">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-semibold tracking-tight">Mahsulotlar</h1>
+          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">Katalog, narxlar va ombor qoldig‘i</p>
+        </div>
+        {canManage && (
+          <div className="flex shrink-0 items-center gap-2">
+            <Button
+              variant="outline"
+              className="h-10 max-sm:w-10 max-sm:px-0"
+              aria-label="Excel/CSV’dan import"
+              render={<Link href="/inventory/products/import" />}
+              nativeButton={false}
+            >
+              <FileSpreadsheet /> <span className="hidden sm:inline">Excel/CSV’dan import</span>
+            </Button>
+            <Button className="h-10" onClick={openCreate}>
+              <Plus /> <span className="hidden sm:inline">Mahsulot qo‘shish</span>
+              <span className="sm:hidden">Qo‘shish</span>
+            </Button>
+          </div>
+        )}
+      </div>
 
       <FilterBar
         search={
@@ -229,20 +235,20 @@ function ProductsView() {
           <div className="space-y-2 md:hidden">
             {data.items.map((p) => (
               <div key={p.id} className="rounded-xl border bg-card p-3">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <Link href={`/inventory/products/${p.id}`} className="font-medium">
+                <div className="-mt-1 -mr-1 flex items-start justify-between gap-2">
+                  <div className="min-w-0 pt-1.5">
+                    <Link href={`/inventory/products/${p.id}`} className="font-medium leading-snug">
                       {p.name}
                     </Link>
                     {p.barcodes[0] && <div className="text-xs text-muted-foreground tabular-nums">{p.barcodes[0].value}</div>}
                   </div>
                   {actions(p)}
                 </div>
-                <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-sm">
+                <div className="mt-1 flex flex-wrap items-center justify-between gap-2 text-sm">
                   <span className="font-medium tabular-nums">{formatMoney(p.salePrice)}</span>
                   {qtyCell(p)}
                 </div>
-                <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+                <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
                   <ActiveBadge active={p.isActive} />
                   {p.category && <span>{p.category.name}</span>}
                   {canCost && p.costPrice !== undefined && <span>Tannarx: {formatMoney(p.costPrice)}</span>}

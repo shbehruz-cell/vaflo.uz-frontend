@@ -50,7 +50,7 @@ export function VoidDialog({ saleId, receiptNo }: { saleId: string; receiptNo: s
         if (o) setError(null)
       }}
     >
-      <AlertDialogTrigger render={<Button variant="destructive" />}>
+      <AlertDialogTrigger render={<Button variant="destructive" className="h-11 flex-1 md:h-8 md:flex-none" />}>
         <Ban /> Bekor qilish
       </AlertDialogTrigger>
       <AlertDialogContent>

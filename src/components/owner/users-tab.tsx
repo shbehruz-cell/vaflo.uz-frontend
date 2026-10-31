@@ -67,8 +67,8 @@ function PasswordField({ value, onChange, label = "Parol" }: { value: string; on
     <Field>
       <FieldLabel htmlFor="pw">{label}</FieldLabel>
       <div className="flex gap-2">
-        <Input id="pw" value={value} onChange={(e) => onChange(e.target.value)} autoComplete="off" placeholder="Kamida 8 belgi" className="font-mono" />
-        <Button type="button" variant="outline" onClick={() => onChange(generatePassword())}>
+        <Input id="pw" value={value} onChange={(e) => onChange(e.target.value)} autoComplete="off" placeholder="Kamida 8 belgi" className="h-10 min-w-0 font-mono md:h-8" />
+        <Button type="button" variant="outline" className="h-10 shrink-0 md:h-8" onClick={() => onChange(generatePassword())}>
           <RefreshCw /> Yaratish
         </Button>
       </div>
@@ -139,14 +139,14 @@ export function UsersTab() {
   }
 
   const rowActions = (u: StaffUser) => (
-    <div className="flex justify-end gap-1">
-      <Button variant="ghost" size="icon" aria-label="Tahrirlash" title="Tahrirlash" disabled={u.role.key === "owner" && !isOwner} onClick={() => open({ type: "edit", user: u })}>
+    <div className="flex justify-end gap-0.5 md:gap-1">
+      <Button variant="ghost" size="icon" className="max-md:size-10" aria-label="Tahrirlash" title="Tahrirlash" disabled={u.role.key === "owner" && !isOwner} onClick={() => open({ type: "edit", user: u })}>
         <Pencil />
       </Button>
-      <Button variant="ghost" size="icon" aria-label="Parolni tiklash" title="Parolni tiklash" disabled={u.role.key === "owner" && !isOwner} onClick={() => open({ type: "reset", user: u })}>
+      <Button variant="ghost" size="icon" className="max-md:size-10" aria-label="Parolni tiklash" title="Parolni tiklash" disabled={u.role.key === "owner" && !isOwner} onClick={() => open({ type: "reset", user: u })}>
         <KeyRound />
       </Button>
-      <Button variant="ghost" size="icon" aria-label={u.status === "ACTIVE" ? "Bloklash" : "Blokdan chiqarish"} title={u.status === "ACTIVE" ? "Bloklash" : "Blokdan chiqarish"} disabled={locked(u)} onClick={() => open({ type: "status", user: u })}>
+      <Button variant="ghost" size="icon" className="max-md:size-10" aria-label={u.status === "ACTIVE" ? "Bloklash" : "Blokdan chiqarish"} title={u.status === "ACTIVE" ? "Bloklash" : "Blokdan chiqarish"} disabled={locked(u)} onClick={() => open({ type: "status", user: u })}>
         {u.status === "ACTIVE" ? <Ban /> : <ShieldCheck />}
       </Button>
     </div>
@@ -166,7 +166,7 @@ export function UsersTab() {
             }}
           >
             <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input value={search} onChange={(e) => setSearch(e.target.value)} onBlur={() => search !== q && set({ q: search, page: "" })} placeholder="Ism yoki login" className="pl-8" aria-label="Qidirish" />
+            <Input value={search} onChange={(e) => setSearch(e.target.value)} onBlur={() => search !== q && set({ q: search, page: "" })} placeholder="Ism yoki login" className="h-10 pl-8" aria-label="Qidirish" />
           </form>
         }
         activeCount={[q, status].filter(Boolean).length}
@@ -175,7 +175,7 @@ export function UsersTab() {
           set({ q: "", status: "", page: "" })
         }}
         actions={
-          <Button onClick={() => open({ type: "create" })} aria-label="Xodim qo‘shish">
+          <Button className="h-10 shrink-0 max-md:w-10 max-md:px-0" onClick={() => open({ type: "create" })} aria-label="Xodim qo‘shish">
             <Plus /> <span className="hidden sm:inline">Xodim qo‘shish</span>
           </Button>
         }
@@ -213,7 +213,7 @@ export function UsersTab() {
                   </div>
                   <Badge variant={u.status === "ACTIVE" ? "outline" : "destructive"}>{u.status === "ACTIVE" ? "Faol" : "Bloklangan"}</Badge>
                 </div>
-                <div className="mt-2 flex items-center justify-between gap-2">
+                <div className="mt-1 flex items-center justify-between gap-2">
                   <Badge variant={u.role.key === "owner" ? "default" : "secondary"}>{u.role.name}</Badge>
                   {rowActions(u)}
                 </div>

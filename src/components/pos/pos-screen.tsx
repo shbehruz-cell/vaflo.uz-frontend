@@ -171,7 +171,7 @@ export function PosScreen({ shift }: { shift: ShiftDetail }) {
   return (
     // Desktopda POS ekran balandligiga sig‘adi (header 3.5rem + sahifa paddingi 3rem): sahifa scroll bo‘lmaydi,
     // faqat mahsulotlar ro‘yxati ichida scroll — savat doim joyida turadi.
-    <div className="flex flex-1 flex-col gap-4 pb-20 lg:h-[calc(100svh-6.5rem)] lg:min-h-0 lg:flex-none lg:pb-0">
+    <div className="flex flex-1 flex-col gap-4 pb-10 md:pb-20 lg:h-[calc(100svh-6.5rem)] lg:min-h-0 lg:flex-none lg:pb-0">
       {/* Smena qatori */}
       <div className="flex flex-wrap items-center gap-x-5 gap-y-1 rounded-lg border bg-card px-3 py-2 text-sm text-muted-foreground">
         <span className="flex items-center gap-1.5 font-medium text-foreground">
@@ -273,9 +273,9 @@ export function PosScreen({ shift }: { shift: ShiftDetail }) {
         </aside>
       </div>
 
-      {/* Mobil: pastki panel */}
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 p-3 backdrop-blur lg:hidden">
-        <Button className="h-12 w-full justify-between text-base" onClick={() => setSheetOpen(true)}>
+      {/* Mobil: savat tugmasi pastki tab bar ustida suzib turadi; planshetda (md) ekran pastida */}
+      <div className="fixed inset-x-3 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-30 md:inset-x-0 md:bottom-0 md:border-t md:bg-background/95 md:p-3 md:backdrop-blur lg:hidden">
+        <Button className="h-12 w-full justify-between rounded-xl text-base" onClick={() => setSheetOpen(true)}>
           <span className="flex items-center gap-2">
             <ChevronUp /> Savat ({itemCount})
           </span>

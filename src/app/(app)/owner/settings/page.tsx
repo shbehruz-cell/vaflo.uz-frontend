@@ -155,9 +155,9 @@ function StoreSummary({ store, warehouses, registers }: { store?: Store; warehou
       </div>
       <dl className="grid grid-cols-3 divide-x border-t bg-muted/30">
         {stats.map((s) => (
-          <div key={s.label} className="min-w-0 px-4 py-3 sm:px-5">
-            <dt className="truncate text-xs text-muted-foreground">{s.label}</dt>
-            <dd className="mt-0.5 text-lg font-semibold tabular-nums">
+          <div key={s.label} className="min-w-0 px-3 py-3 sm:px-5">
+            <dt className="text-xs leading-tight text-muted-foreground">{s.label}</dt>
+            <dd className="mt-1 text-lg font-semibold tabular-nums">
               {s.value ?? "—"}
               {s.suffix && s.value != null && <span className="ml-1 text-xs font-normal text-muted-foreground">{s.suffix}</span>}
             </dd>
@@ -205,7 +205,7 @@ function StoreForm({ store }: { store: Store }) {
         if (!nameInvalid) save.mutate()
       }}
     >
-      <FieldGroup className="grid gap-5 p-5 md:grid-cols-2">
+      <FieldGroup className="grid gap-5 p-4 sm:p-5 md:grid-cols-2">
         <Field data-invalid={nameInvalid || undefined}>
           <FieldLabel htmlFor="store-name">Do‘kon nomi</FieldLabel>
           <Input id="store-name" className="h-10" required minLength={2} maxLength={100} value={name} onChange={(e) => setName(e.target.value)} aria-invalid={nameInvalid || undefined} />
@@ -219,11 +219,12 @@ function StoreForm({ store }: { store: Store }) {
         </Field>
       </FieldGroup>
       {/* Saqlash paneli faqat o‘zgarish bo‘lganda */}
-      <div className={cn("flex items-center justify-end gap-2 border-t bg-muted/30 px-5 py-3", !dirty && "hidden")}>
-        <span className="mr-auto text-sm text-muted-foreground">Saqlanmagan o‘zgarishlar bor</span>
+      <div className={cn("flex flex-wrap items-center justify-end gap-2 border-t bg-muted/30 px-4 py-3 sm:px-5", !dirty && "hidden")}>
+        <span className="w-full text-sm text-muted-foreground sm:mr-auto sm:w-auto">Saqlanmagan o‘zgarishlar bor</span>
         <Button
           type="button"
           variant="ghost"
+          className="h-10 max-sm:flex-1"
           onClick={() => {
             setName(store.name)
             setTimezone(store.timezone)
@@ -231,7 +232,7 @@ function StoreForm({ store }: { store: Store }) {
         >
           Bekor qilish
         </Button>
-        <Button type="submit" disabled={save.isPending || nameInvalid}>
+        <Button type="submit" className="h-10 max-sm:flex-1" disabled={save.isPending || nameInvalid}>
           {save.isPending && <Spinner />} Saqlash
         </Button>
       </div>
@@ -380,7 +381,7 @@ function DemoRequests({ q }: { q: ReturnType<typeof useDemoRequests> }) {
             {r.message && <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{r.message}</p>}
             <div className="mt-1 text-xs text-muted-foreground">{formatDateTime(r.createdAt)}</div>
           </div>
-          <Button variant="outline" size="sm" className="h-9 w-fit tabular-nums" render={<a href={`tel:${r.phone}`} />} nativeButton={false}>
+          <Button variant="outline" size="sm" className="h-10 w-fit tabular-nums md:h-9" render={<a href={`tel:${r.phone}`} />} nativeButton={false}>
             <Phone /> {formatPhone(r.phone)}
           </Button>
         </li>
@@ -431,13 +432,13 @@ export default function OwnerSettingsPage() {
       <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[12rem_minmax(0,1fr)] lg:gap-10">
         {/* Bo‘limlar: desktopda yopishqoq chap menyu, mobilda gorizontal qator */}
         <nav aria-label="Sozlamalar bo‘limlari" className="min-w-0 lg:sticky lg:top-20 lg:self-start">
-          <ul className="scroll-row -mx-4 gap-1 px-4 lg:mx-0 lg:flex-col lg:px-0">
+          <ul className="scroll-row -mx-4 gap-2 px-4 lg:mx-0 lg:flex-col lg:gap-1 lg:px-0">
             {nav.map((n) => (
               <li key={n.id} className="shrink-0">
                 <a
                   href={`#${n.id}`}
                   aria-current={activeId === n.id ? "location" : undefined}
-                  className="flex h-9 items-center gap-2 rounded-lg px-3 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground aria-[current]:bg-primary/10 aria-[current]:font-medium aria-[current]:text-primary"
+                  className="flex h-10 items-center gap-2 rounded-full border px-3.5 text-sm whitespace-nowrap lg:h-9 lg:rounded-lg lg:border-transparent lg:px-3 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground aria-[current]:border-primary aria-[current]:bg-primary/10 aria-[current]:font-medium lg:aria-[current]:border-transparent aria-[current]:text-primary"
                 >
                   <n.icon className="size-4" aria-hidden="true" />
                   {n.label}
@@ -467,7 +468,7 @@ export default function OwnerSettingsPage() {
               title="Kassalar"
               description="Har bir kassada bir vaqtda nechta kassir ishlashi va kimlar ishlay olishini belgilang."
               action={
-                <Button size="sm" className="h-9" onClick={() => setDlg("register")} disabled={!whs.data?.length}>
+                <Button size="sm" className="h-10 md:h-9" onClick={() => setDlg("register")} disabled={!whs.data?.length}>
                   <Plus /> <span className="hidden sm:inline">Kassa qo‘shish</span>
                   <span className="sm:hidden">Qo‘shish</span>
                 </Button>
@@ -483,7 +484,7 @@ export default function OwnerSettingsPage() {
               title="Omborlar"
               description="Mahsulot qoldig‘i har bir ombor bo‘yicha yuritiladi; kassa o‘z omboridan sotadi."
               action={
-                <Button size="sm" variant="outline" className="h-9" onClick={() => setDlg("warehouse")}>
+                <Button size="sm" variant="outline" className="h-10 md:h-9" onClick={() => setDlg("warehouse")}>
                   <Plus /> <span className="hidden sm:inline">Ombor qo‘shish</span>
                   <span className="sm:hidden">Qo‘shish</span>
                 </Button>

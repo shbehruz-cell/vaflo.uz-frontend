@@ -117,7 +117,7 @@ function Reports() {
     <div className="space-y-5">
       <PageHeader title="Hisobotlar" description="Savdo, mahsulot va kassirlar bo‘yicha tahlil" />
 
-      <div className="space-y-3">
+      <div className="space-y-2.5">
         <PeriodFilter defaultPreset="month" />
         <FilterBar
           activeCount={[registerId, paymentMethod, categoryId].filter(Boolean).length}
@@ -161,11 +161,11 @@ function Reports() {
 
       <Tabs value={tab} onValueChange={(v) => set({ tab: v === "dynamics" ? "" : String(v) })}>
         <div className="scroll-row -mx-4 px-4 md:mx-0 md:px-0">
-          <TabsList variant="line" className="h-auto w-max">
-            <TabsTrigger value="dynamics" className="shrink-0 px-3">Savdo dinamikasi</TabsTrigger>
-            <TabsTrigger value="products" className="shrink-0 px-3">Mahsulotlar</TabsTrigger>
-            <TabsTrigger value="cashiers" className="shrink-0 px-3">Kassirlar</TabsTrigger>
-            <TabsTrigger value="low" className="shrink-0 px-3">Kam qolganlar</TabsTrigger>
+          <TabsList variant="line" className="h-auto w-max max-md:gap-2 max-md:p-0">
+            <TabsTrigger value="dynamics" className="shrink-0 px-3 max-md:h-9 max-md:rounded-full max-md:border-border max-md:px-3.5 max-md:after:hidden max-md:data-active:border-primary! max-md:data-active:bg-primary/10! max-md:data-active:text-primary!">Savdo dinamikasi</TabsTrigger>
+            <TabsTrigger value="products" className="shrink-0 px-3 max-md:h-9 max-md:rounded-full max-md:border-border max-md:px-3.5 max-md:after:hidden max-md:data-active:border-primary! max-md:data-active:bg-primary/10! max-md:data-active:text-primary!">Mahsulotlar</TabsTrigger>
+            <TabsTrigger value="cashiers" className="shrink-0 px-3 max-md:h-9 max-md:rounded-full max-md:border-border max-md:px-3.5 max-md:after:hidden max-md:data-active:border-primary! max-md:data-active:bg-primary/10! max-md:data-active:text-primary!">Kassirlar</TabsTrigger>
+            <TabsTrigger value="low" className="shrink-0 px-3 max-md:h-9 max-md:rounded-full max-md:border-border max-md:px-3.5 max-md:after:hidden max-md:data-active:border-primary! max-md:data-active:bg-primary/10! max-md:data-active:text-primary!">Kam qolganlar</TabsTrigger>
           </TabsList>
         </div>
 

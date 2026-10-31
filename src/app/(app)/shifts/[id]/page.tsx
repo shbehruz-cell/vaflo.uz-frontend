@@ -36,7 +36,7 @@ export default function ShiftDetailPage({ params }: { params: Promise<{ id: stri
             : undefined
         }
         actions={
-          <Button variant="outline" render={<Link href="/shifts" />} nativeButton={false}>
+          <Button variant="outline" className="hidden md:inline-flex" render={<Link href="/shifts" />} nativeButton={false}>
             <ArrowLeft /> Smenalar
           </Button>
         }
@@ -54,7 +54,25 @@ export default function ShiftDetailPage({ params }: { params: Promise<{ id: stri
             {shift.cashMovements.length === 0 ? (
               <EmptyState title="Kassa harakatlari yo‘q" />
             ) : (
-              <div className="overflow-hidden rounded-2xl border bg-card">
+              <>
+              <ul className="space-y-2 md:hidden">
+                {shift.cashMovements.map((m) => (
+                  <li key={m.id} className="rounded-2xl border bg-card p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="flex items-center gap-2">
+                        {m.type === "CASH_IN" ? <Badge variant="secondary">Kirim</Badge> : <Badge variant="outline">Chiqim</Badge>}
+                        <span className="text-xs text-muted-foreground">{formatDateTime(m.createdAt)}</span>
+                      </span>
+                      <span className="font-semibold tabular-nums">
+                        {m.type === "CASH_IN" ? "+" : "−"}
+                        {formatMoney(m.amount)}
+                      </span>
+                    </div>
+                    {m.reason && <p className="mt-1 break-words text-sm text-muted-foreground">{m.reason}</p>}
+                  </li>
+                ))}
+              </ul>
+              <div className="hidden overflow-hidden rounded-2xl border bg-card md:block">
                 <Table>
                   <TableHeader className="bg-muted/50 text-xs font-medium text-muted-foreground">
                     <TableRow>
@@ -81,6 +99,7 @@ export default function ShiftDetailPage({ params }: { params: Promise<{ id: stri
                   </TableBody>
                 </Table>
               </div>
+              </>
             )}
           </section>
         </>

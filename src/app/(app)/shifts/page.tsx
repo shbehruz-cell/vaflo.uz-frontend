@@ -4,6 +4,7 @@ import { Suspense } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useQuery } from "@tanstack/react-query"
+import { Clock, Store, User } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -51,7 +52,7 @@ function CurrentShiftCard() {
           <CardDescription>Sotuvni boshlash uchun kassa sahifasida smenani oching.</CardDescription>
         </CardHeader>
         <CardContent>
-          <Button render={<Link href="/pos" />} nativeButton={false}>
+          <Button className="h-11 w-full md:h-8 md:w-auto" render={<Link href="/pos" />} nativeButton={false}>
             Kassaga o‘tish
           </Button>
         </CardContent>
@@ -64,16 +65,25 @@ function CurrentShiftCard() {
         <CardTitle className="flex flex-wrap items-center gap-2">
           Joriy smena <ShiftStatusBadge status={shift.status} />
         </CardTitle>
-        <CardDescription>
-          <span>{shift.register?.name ?? "Kassa"}</span>
-          <span className="ml-3">{formatDateTime(shift.openedAt)} dan beri</span>
-          <span className="ml-3">{shift.cashierName}</span>
+        <CardDescription className="flex flex-col gap-1 md:block">
+          <span className="inline-flex items-center gap-1.5">
+            <Store className="size-3.5 md:hidden" aria-hidden />
+            {shift.register?.name ?? "Kassa"}
+          </span>
+          <span className="inline-flex items-center gap-1.5 md:ml-3">
+            <Clock className="size-3.5 md:hidden" aria-hidden />
+            {formatDateTime(shift.openedAt)} dan beri
+          </span>
+          <span className="inline-flex items-center gap-1.5 md:ml-3">
+            <User className="size-3.5 md:hidden" aria-hidden />
+            {shift.cashierName}
+          </span>
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <ShiftStats shift={shift} />
-        <div className="flex flex-wrap gap-2">
-          <Button render={<Link href="/pos" />} nativeButton={false}>
+        <div className="flex flex-col gap-2 md:flex-row md:flex-wrap">
+          <Button className="h-11 w-full md:h-8 md:w-auto" render={<Link href="/pos" />} nativeButton={false}>
             Kassaga qaytish
           </Button>
           <CashMovementDialog shiftId={shift.id} />

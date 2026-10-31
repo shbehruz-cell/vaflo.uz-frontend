@@ -45,11 +45,11 @@ export default function SaleDetailPage({ params }: { params: Promise<{ id: strin
         description={formatDateTime(s.createdAt)}
         className="print:[&_button]:hidden"
         actions={
-          <div className="flex flex-wrap items-center gap-2 print:hidden">
-            <Button variant="ghost" render={<Link href="/sales" />} nativeButton={false}>
+          <div className="flex w-full items-center gap-2 print:hidden md:w-auto md:flex-wrap">
+            <Button variant="ghost" className="hidden md:inline-flex" render={<Link href="/sales" />} nativeButton={false}>
               <ArrowLeft /> Orqaga
             </Button>
-            <Button variant="outline" onClick={() => window.print()}>
+            <Button variant="outline" className="h-11 flex-1 md:h-8 md:flex-none" onClick={() => window.print()}>
               <Printer /> Chop etish
             </Button>
             {canRefund && <RefundDialog sale={s} />}
@@ -89,7 +89,27 @@ export default function SaleDetailPage({ params }: { params: Promise<{ id: strin
         </Card>
       )}
 
-      <div className={TABLE_CARD}>
+      <ul className="space-y-2 sm:hidden">
+        {s.items.map((i) => (
+          <li key={i.id} className="rounded-2xl border bg-card p-3 text-sm">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="break-words font-medium">{i.nameSnapshot}</div>
+                {i.skuSnapshot && <div className="text-xs text-muted-foreground">{i.skuSnapshot}</div>}
+              </div>
+              <div className="shrink-0 font-semibold tabular-nums">{formatMoney(i.lineTotal, false)}</div>
+            </div>
+            <div className="mt-1 flex flex-wrap gap-x-3 text-xs text-muted-foreground tabular-nums">
+              <span>
+                {formatQty(i.qty)} × {formatMoney(i.unitPrice, false)}
+              </span>
+              {Number(i.discount) > 0 && <span>Chegirma: {formatMoney(i.discount, false)}</span>}
+              {Number(i.refundedQty) > 0 && <span className="text-destructive">Qaytarilgan: {formatQty(i.refundedQty)}</span>}
+            </div>
+          </li>
+        ))}
+      </ul>
+      <div className={`${TABLE_CARD} hidden sm:block`}>
       <Table>
         <TableHeader className={THEAD}>
           <TableRow>
@@ -127,8 +147,8 @@ export default function SaleDetailPage({ params }: { params: Promise<{ id: strin
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
             {s.payments.map((p) => (
-              <div key={p.id} className="flex items-center justify-between gap-2">
-                <div className="flex flex-wrap items-center gap-2">
+              <div key={p.id} className="flex items-start justify-between gap-2">
+                <div className="flex min-w-0 flex-wrap items-center gap-2">
                   <Badge variant="outline">{PAYMENT_LABELS[p.method] ?? p.method}</Badge>
                   {p.cardType && (
                     <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -144,7 +164,7 @@ export default function SaleDetailPage({ params }: { params: Promise<{ id: strin
                     </span>
                   )}
                 </div>
-                <span className="font-medium tabular-nums">{formatMoney(p.amount)}</span>
+                <span className="shrink-0 font-medium tabular-nums">{formatMoney(p.amount)}</span>
               </div>
             ))}
           </CardContent>

@@ -82,7 +82,7 @@ function Meta({ data, label = "Ko‘rish" }: { data: unknown; label?: string }) 
   if (empty) return <span className="text-muted-foreground">—</span>
   return (
     <Popover>
-      <PopoverTrigger render={<Button variant="ghost" size="sm" />}>
+      <PopoverTrigger render={<Button variant="ghost" size="sm" className="max-md:h-10 max-md:shrink-0 max-md:border-border max-md:bg-muted/40 max-md:px-3" />}>
         <Braces /> {label}
       </PopoverTrigger>
       <PopoverContent className="w-80 max-w-[calc(100vw-2rem)]" align="end">
@@ -120,6 +120,7 @@ function AuditLog() {
         search={
           <Input
             aria-label="Amal prefiksi"
+            className="h-10"
             placeholder="Amal kodi (masalan product.)"
             value={actionInput}
             onChange={(e) => setActionInput(e.target.value)}
@@ -164,11 +165,11 @@ function AuditLog() {
           <div className="space-y-2 md:hidden">
             {q.data.items.map((r) => (
               <div key={r.id} className="rounded-2xl border bg-card p-3">
-                <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
-                  <span className="whitespace-nowrap">{formatDateTime(r.createdAt)}</span>
+                <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
+                  <span className="shrink-0 whitespace-nowrap">{formatDateTime(r.createdAt)}</span>
                   <span className="min-w-0 truncate">{r.actorName ?? "Tizim"}</span>
                 </div>
-                <div className="mt-1.5 flex items-center justify-between gap-2">
+                <div className="mt-2 flex items-center justify-between gap-3">
                   <div className="min-w-0">
                     <div className="font-medium">{actionLabel(r.action)}</div>
                     <div className="truncate font-mono text-xs text-muted-foreground">{r.action}</div>

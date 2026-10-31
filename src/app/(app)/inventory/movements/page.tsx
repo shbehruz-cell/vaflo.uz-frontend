@@ -90,7 +90,7 @@ function MovementsView() {
         {productId ? (
           <div className="flex h-10 items-center justify-between gap-2 rounded-lg border px-2.5 text-sm">
             <span className="truncate">{productQ.data?.name ?? "Mahsulot…"}</span>
-            <Button variant="ghost" size="icon-sm" aria-label="Mahsulot filtrini olib tashlash" onClick={() => set({ product: null, page: 1 })}>
+            <Button variant="ghost" size="icon-sm" className="max-md:size-9" aria-label="Mahsulot filtrini olib tashlash" onClick={() => set({ product: null, page: 1 })}>
               <X />
             </Button>
           </div>
@@ -145,16 +145,16 @@ function MovementsView() {
             {data.items.map((m) => (
               <div key={m.id} className="rounded-xl border bg-card p-3 text-sm">
                 <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0 font-medium">{m.product.name}</div>
-                  {qtyText(m)}
+                  <div className="min-w-0 font-medium leading-snug">{m.product.name}</div>
+                  <span className="shrink-0 font-semibold">{qtyText(m)}</span>
                 </div>
-                <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
                   <MovementBadge type={m.type} />
                   <span>{formatDateTime(m.createdAt)}</span>
-                  <span>Qoldiq: {formatQty(m.balanceAfter)}</span>
+                  <span className="tabular-nums">Qoldiq: {formatQty(m.balanceAfter)}</span>
                 </div>
                 {(m.reason || m.referenceType) && (
-                  <div className="mt-1 text-xs text-muted-foreground">
+                  <div className="mt-1 break-words text-xs text-muted-foreground">
                     {m.reason && <span className="mr-2">{m.reason}</span>}
                     {m.referenceType && <span>{source(m)}</span>}
                   </div>

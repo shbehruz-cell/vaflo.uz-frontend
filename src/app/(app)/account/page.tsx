@@ -39,7 +39,7 @@ export default function AccountPage() {
   return (
     <>
       <PageHeader title="Hisob" description={user ? `${user.name}, ${user.role.name}` : undefined} />
-      <Card className="max-w-md rounded-2xl shadow-none">
+      <Card className="w-full max-w-md rounded-2xl shadow-none">
         <CardHeader>
           <CardTitle className="text-base font-semibold">Parolni o‘zgartirish</CardTitle>
         </CardHeader>
@@ -48,18 +48,18 @@ export default function AccountPage() {
             <FieldGroup>
               <Field>
                 <FieldLabel htmlFor="currentPassword">Joriy parol</FieldLabel>
-                <Input id="currentPassword" name="currentPassword" type="password" autoComplete="current-password" required />
+                <Input id="currentPassword" className="h-10" name="currentPassword" type="password" autoComplete="current-password" required />
               </Field>
               <Field>
                 <FieldLabel htmlFor="newPassword">Yangi parol</FieldLabel>
-                <Input id="newPassword" name="newPassword" type="password" autoComplete="new-password" minLength={8} required />
+                <Input id="newPassword" className="h-10" name="newPassword" type="password" autoComplete="new-password" minLength={8} required />
               </Field>
               <Field data-invalid={!!error || undefined}>
                 <FieldLabel htmlFor="confirm">Yangi parolni takrorlang</FieldLabel>
-                <Input id="confirm" name="confirm" type="password" autoComplete="new-password" required />
+                <Input id="confirm" className="h-10" name="confirm" type="password" autoComplete="new-password" required />
                 {error && <FieldError>{error}</FieldError>}
               </Field>
-              <Button type="submit" disabled={pending} className="w-fit">
+              <Button type="submit" disabled={pending} className="h-11 w-full sm:h-8 sm:w-fit">
                 {pending && <Spinner />} Saqlash
               </Button>
             </FieldGroup>

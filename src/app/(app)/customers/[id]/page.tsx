@@ -55,14 +55,15 @@ function CustomerContent({ id }: { id: string }) {
       <PageHeader
         title={c.name}
         description={`Qo‘shilgan: ${formatDate(c.createdAt)}`}
+        className="flex-row items-center gap-3 sm:items-end"
         actions={
           <>
-            <Button variant="ghost" render={<Link href="/customers" />} nativeButton={false}>
+            <Button variant="ghost" className="hidden md:inline-flex" render={<Link href="/customers" />} nativeButton={false}>
               <ArrowLeft /> Orqaga
             </Button>
             {can("customers.manage") && (
-              <Button variant="outline" onClick={() => setEditing(true)}>
-                <Pencil /> Tahrirlash
+              <Button variant="outline" className="h-10 md:h-8" onClick={() => setEditing(true)} aria-label="Tahrirlash">
+                <Pencil /> <span className="hidden sm:inline">Tahrirlash</span>
               </Button>
             )}
           </>
@@ -89,7 +90,21 @@ function CustomerContent({ id }: { id: string }) {
         <EmptyState title="Xaridlar yo‘q" description="Bu xaridor hali xarid qilmagan." />
       ) : (
         <>
-          <div className={TABLE_CARD}>
+          <div className="space-y-2 md:hidden">
+            {recentSales.items.map((s) => (
+              <Link key={s.id} href={`/sales/${s.id}`} className="block rounded-2xl border bg-card p-3 active:bg-muted/50">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-medium tabular-nums">№ {s.receiptNo}</span>
+                  <SaleStatusBadge status={s.status} />
+                </div>
+                <div className="mt-1 flex items-center justify-between gap-2">
+                  <span className="text-xs text-muted-foreground">{formatDateTime(s.createdAt)}</span>
+                  <span className="font-semibold tabular-nums">{formatMoney(s.total)}</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+          <div className={`${TABLE_CARD} hidden md:block`}>
           <Table>
             <TableHeader className={THEAD}>
               <TableRow>

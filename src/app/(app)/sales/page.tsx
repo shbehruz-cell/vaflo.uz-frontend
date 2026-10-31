@@ -210,7 +210,7 @@ function SalesContent() {
           <div className="space-y-2 md:hidden">
             {q.data.items.map((s) => (
               <Link key={s.id} href={`/sales/${s.id}`} className="block">
-                <div className="space-y-1.5 rounded-xl border bg-card p-3">
+                <div className="space-y-1.5 rounded-2xl border bg-card p-3 active:bg-muted/50">
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-medium tabular-nums">№ {s.receiptNo}</span>
                     <SaleStatusBadge status={s.status} />

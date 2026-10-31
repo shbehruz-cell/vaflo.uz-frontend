@@ -37,7 +37,7 @@ export function FilterBar({
 
   if (!isMobile) {
     return (
-      <div className={cn("flex flex-wrap items-center gap-2 rounded-2xl border bg-card p-3", className)}>
+      <div className={cn("flex flex-wrap items-center gap-2 rounded-2xl border bg-card p-3 [&>select]:w-auto [&>select]:min-w-44", className)}>
         {search && <div className="min-w-56 flex-1">{search}</div>}
         {children}
         {onReset && activeCount > 0 && (

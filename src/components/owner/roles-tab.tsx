@@ -68,9 +68,9 @@ function PermissionMatrix({
           {g.codes
             .filter((c) => byCode.has(c))
             .map((c) => (
-              <div key={c} className="flex items-start gap-2.5 border-b px-3 py-2.5 last:border-b-0">
+              <div key={c} className="flex items-start gap-2.5 border-b px-3 py-3 last:border-b-0 md:py-2.5">
                 <Checkbox id={`perm-${c}`} className="mt-0.5" checked={value.has(c)} disabled={readOnly} onCheckedChange={(on) => onToggle(c, !!on)} />
-                <Label htmlFor={`perm-${c}`} className={cn("flex-col items-start gap-0 text-sm font-normal leading-snug", readOnly && "opacity-80")}>
+                <Label htmlFor={`perm-${c}`} className={cn("min-w-0 flex-col items-start gap-0 text-sm font-normal leading-snug", readOnly && "opacity-80")}>
                   <span>{byCode.get(c)!.description}</span>
                   <span className="font-mono text-xs text-muted-foreground">{c}</span>
                 </Label>
@@ -150,14 +150,14 @@ export function RolesTab() {
         </p>
       )}
       <div className="grid gap-4 lg:grid-cols-[16rem_1fr]">
-        <div className="space-y-2">
+        <div className="scroll-row -mx-4 gap-2 px-4 lg:mx-0 lg:block lg:space-y-2 lg:px-0">
           {list.map((r) => (
             <button
               key={r.id}
               type="button"
               onClick={() => setSelectedId(r.id)}
               className={cn(
-                "flex min-h-11 w-full items-center justify-between gap-2 rounded-lg border bg-card px-3 py-2.5 text-left text-sm transition-colors hover:bg-muted",
+                "flex min-h-11 shrink-0 items-center max-lg:rounded-full max-lg:py-1.5 lg:w-full justify-between gap-2 rounded-lg border bg-card px-3 py-2.5 text-left text-sm transition-colors hover:bg-muted",
                 r.id === role?.id && "border-primary bg-primary/5",
               )}
             >
@@ -168,7 +168,7 @@ export function RolesTab() {
             </button>
           ))}
           {isOwner && (
-            <Button variant="outline" className="w-full" onClick={() => { setCreateError(null); setCreateOpen(true) }}>
+            <Button variant="outline" className="h-11 shrink-0 max-lg:rounded-full lg:h-8 lg:w-full" onClick={() => { setCreateError(null); setCreateOpen(true) }}>
               <Plus /> Yangi rol
             </Button>
           )}
@@ -187,7 +187,7 @@ export function RolesTab() {
               </CardTitle>
               {isOwner && isCustom && (
                 <CardAction>
-                  <Button variant="outline" size="sm" className="text-destructive" onClick={() => setDeleting(role)}>
+                  <Button variant="outline" size="sm" className="h-10 text-destructive md:h-7" onClick={() => setDeleting(role)}>
                     <Trash2 /> O‘chirish
                   </Button>
                 </CardAction>
@@ -207,7 +207,7 @@ export function RolesTab() {
               />
               {role.key === "owner" && <p className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-2 text-sm text-muted-foreground"><Lock className="size-4 shrink-0" /> Owner roli barcha ruxsatlarga ega va o‘zgartirilmaydi.</p>}
               {!readOnly && (
-                <div className="flex justify-end gap-2">
+                <div className="flex justify-end gap-2 max-sm:[&>*]:h-11 max-sm:[&>*]:flex-1">
                   <Button variant="outline" disabled={!dirty || save.isPending} onClick={() => setDraft(null)}>
                     Bekor qilish
                   </Button>
