@@ -32,6 +32,12 @@ import {
 import { useRegisters } from "./use-current-shift"
 import { uuid } from "@/lib/uuid"
 
+/**
+ * Qidiruvga avtomatik fokus faqat sichqoncha/klaviaturali qurilmalarda (kassa kompyuteri, skaner).
+ * Telefon/planshetda fokus ekran klaviaturasini ochib, mahsulotlar ro‘yxatini yopib qo‘yadi.
+ */
+const canAutoFocus = () => typeof window !== "undefined" && window.matchMedia("(hover: hover) and (pointer: fine)").matches
+
 export function PosScreen({ shift }: { shift: ShiftDetail }) {
   const searchRef = useRef<HTMLInputElement>(null)
   const [q, setQ] = useState("")
@@ -60,6 +66,7 @@ export function PosScreen({ shift }: { shift: ShiftDetail }) {
   })
 
   const focusSearch = useCallback(() => {
+    if (!canAutoFocus()) return
     searchRef.current?.focus()
     searchRef.current?.select()
   }, [])
@@ -91,7 +98,7 @@ export function PosScreen({ shift }: { shift: ShiftDetail }) {
         toast.error(e instanceof ApiError ? e.message : "Qidirishda xatolik")
       }
     }
-    searchRef.current?.focus()
+    focusSearch()
   }
 
   const actions: CartActions = useMemo(
@@ -122,6 +129,10 @@ export function PosScreen({ shift }: { shift: ShiftDetail }) {
     setSheetOpen(false)
     setPayOpen(true)
   }, [pricedLines])
+
+  useEffect(() => {
+    focusSearch()
+  }, [focusSearch])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -184,7 +195,6 @@ export function PosScreen({ shift }: { shift: ShiftDetail }) {
             <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               ref={searchRef}
-              autoFocus
               value={q}
               onChange={(e) => setQ(e.target.value)}
               onKeyDown={(e) => {
