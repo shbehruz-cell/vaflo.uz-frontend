@@ -33,3 +33,25 @@ export const SALE_STATUS_LABELS: Record<string, string> = {
   REFUNDED: "Qaytarilgan",
   VOIDED: "Bekor qilingan",
 }
+
+const tashkentDay = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Tashkent" })
+const tashkentTime = new Intl.DateTimeFormat("ru-RU", { timeZone: "Asia/Tashkent", hour: "2-digit", minute: "2-digit" })
+const MONTHS_UZ = ["yanvar", "fevral", "mart", "aprel", "may", "iyun", "iyul", "avgust", "sentabr", "oktabr", "noyabr", "dekabr"]
+const WEEKDAYS_UZ = ["yakshanba", "dushanba", "seshanba", "chorshanba", "payshanba", "juma", "shanba"]
+
+/** Toshkent bo‘yicha kun kaliti: `YYYY-MM-DD`. */
+export const dayKey = (iso: string | Date) => tashkentDay.format(new Date(iso))
+/** Toshkent bo‘yicha vaqt: `14:35`. */
+export const formatTime = (iso: string | Date) => tashkentTime.format(new Date(iso))
+
+/** Kun sarlavhasi: "Bugun", "Kecha" yoki "29-oktabr, payshanba" (boshqa yil bo‘lsa yil bilan). */
+export function formatDayLabel(key: string) {
+  const today = dayKey(new Date())
+  const yesterday = dayKey(new Date(Date.now() - 86400000))
+  if (key === today) return "Bugun"
+  if (key === yesterday) return "Kecha"
+  const [y, m, d] = key.split("-").map(Number)
+  const wd = new Date(Date.UTC(y, m - 1, d, 12)).getUTCDay()
+  const year = String(y) === today.slice(0, 4) ? "" : ` ${y}`
+  return `${d}-${MONTHS_UZ[m - 1]}${year}, ${WEEKDAYS_UZ[wd]}`
+}

@@ -20,7 +20,7 @@ import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Textarea } from "@/components/ui/textarea"
 import { api } from "@/lib/api"
 
-export function VoidDialog({ saleId, receiptNo }: { saleId: string; receiptNo: string }) {
+export function VoidDialog({ saleId, receiptNo, className }: { saleId: string; receiptNo: string; className?: string }) {
   const qc = useQueryClient()
   const [open, setOpen] = useState(false)
   const [reason, setReason] = useState("")
@@ -50,7 +50,7 @@ export function VoidDialog({ saleId, receiptNo }: { saleId: string; receiptNo: s
         if (o) setError(null)
       }}
     >
-      <AlertDialogTrigger render={<Button variant="destructive" className="h-11 flex-1 md:h-8 md:flex-none" />}>
+      <AlertDialogTrigger render={<Button variant="destructive" className={className} />}>
         <Ban /> Bekor qilish
       </AlertDialogTrigger>
       <AlertDialogContent>

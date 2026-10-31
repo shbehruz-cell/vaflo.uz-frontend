@@ -50,7 +50,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider>
       <AppSidebar />
-      <SidebarInset>
+      <SidebarInset className="min-w-0">
         <header className="sticky top-0 z-30 flex print:hidden h-14 shrink-0 items-center gap-2 border-b bg-background/90 px-4 backdrop-blur">
           {/* Desktopda menyu — sidebar. Mobilda bo‘limlar pastki paneldan va /menu sahifasidan ochiladi */}
           {back ? (

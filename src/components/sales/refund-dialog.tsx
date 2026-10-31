@@ -23,7 +23,7 @@ import { api } from "@/lib/api"
 import { PAYMENT_LABELS, formatMoney, formatQty } from "@/lib/format"
 import type { SaleDetail } from "./types"
 
-export function RefundDialog({ sale }: { sale: SaleDetail }) {
+export function RefundDialog({ sale, className }: { sale: SaleDetail; className?: string }) {
   const qc = useQueryClient()
   const [open, setOpen] = useState(false)
   const [confirm, setConfirm] = useState(false)
@@ -79,7 +79,7 @@ export function RefundDialog({ sale }: { sale: SaleDetail }) {
   return (
     <>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogTrigger render={<Button variant="outline" className="h-11 flex-1 md:h-8 md:flex-none" />}>
+        <DialogTrigger render={<Button variant="outline" className={className} />}>
           <Undo2 /> Qaytarish
         </DialogTrigger>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">

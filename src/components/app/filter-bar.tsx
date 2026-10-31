@@ -19,6 +19,7 @@ export function FilterBar({
   activeCount = 0,
   onReset,
   actions,
+  collapsed = false,
   className,
 }: {
   /** Doim ko‘rinadigan qidiruv maydoni (ixtiyoriy) */
@@ -31,11 +32,13 @@ export function FilterBar({
   onReset?: () => void
   /** O‘ng tomondagi qo‘shimcha amallar (masalan, CSV) — mobilda tugma yonida */
   actions?: React.ReactNode
+  /** Desktopda ham ixcham ko‘rinish: qidiruv + "Filtr" tugmasi, filtrlar o‘ng panelda */
+  collapsed?: boolean
   className?: string
 }) {
   const isMobile = useIsMobile()
 
-  if (!isMobile) {
+  if (!isMobile && !collapsed) {
     return (
       <div className={cn("flex flex-wrap items-center gap-2 rounded-2xl border bg-card p-3 [&>select]:w-auto [&>select]:min-w-44", className)}>
         {search && <div className="min-w-56 flex-1">{search}</div>}
@@ -59,17 +62,17 @@ export function FilterBar({
             render={<Button variant="outline" className="h-10 shrink-0 gap-1.5 px-3" aria-label="Filtrlarni ochish" />}
           >
             <SlidersHorizontal />
-            {!search && "Filtr"}
+            {(!search || !isMobile) && "Filtr"}
             {activeCount > 0 && (
               <Badge className="h-5 min-w-5 rounded-full px-1.5 tabular-nums">{activeCount}</Badge>
             )}
           </SheetTrigger>
-          <SheetContent side="bottom" className="max-h-[85svh] rounded-t-2xl">
+          <SheetContent side={isMobile ? "bottom" : "right"} className={isMobile ? "max-h-[85svh] rounded-t-2xl" : "w-full sm:max-w-sm"}>
             <SheetHeader>
               <SheetTitle>Filtrlar</SheetTitle>
               <SheetDescription>Ro‘yxat tanlangan filtrlar bo‘yicha darhol yangilanadi.</SheetDescription>
             </SheetHeader>
-            <div className="grid gap-3 overflow-y-auto px-4 [&>*]:w-full">{children}</div>
+            <div className="grid content-start gap-3 overflow-y-auto px-4 [&>*]:w-full [&_.md\:flex]:grid">{children}</div>
             <SheetFooter className="flex-row gap-2">
               {onReset && (
                 <Button variant="outline" className="h-11 flex-1" onClick={onReset} disabled={activeCount === 0}>
