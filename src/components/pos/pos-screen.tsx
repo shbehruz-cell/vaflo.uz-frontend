@@ -275,12 +275,25 @@ export function PosScreen({ shift }: { shift: ShiftDetail }) {
 
       {/* Mobil: savat tugmasi pastki tab bar ustida suzib turadi; planshetda (md) ekran pastida */}
       <div className="fixed inset-x-3 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-30 md:inset-x-0 md:bottom-0 md:border-t md:bg-background/95 md:p-3 md:backdrop-blur lg:hidden">
-        <Button className="h-12 w-full justify-between rounded-xl text-base" onClick={() => setSheetOpen(true)}>
-          <span className="flex items-center gap-2">
-            <ChevronUp /> Savat ({itemCount})
-          </span>
-          <span className="tabular-nums">{formatMoney(som(totals.total))}</span>
-        </Button>
+        {/* Navbat ko‘p bo‘lganda: savatni ochmasdan to‘g‘ridan-to‘g‘ri "To‘lash" */}
+        <div className="flex gap-2 rounded-2xl border bg-card p-1.5 md:border-0 md:bg-transparent md:p-0">
+          <Button
+            variant="ghost"
+            className="h-12 min-w-0 flex-1 justify-between rounded-xl px-3 text-base"
+            onClick={() => setSheetOpen(true)}
+            aria-label={`Savatni ochish, ${itemCount} ta mahsulot`}
+          >
+            <span className="flex items-center gap-2">
+              <ChevronUp className="text-muted-foreground" />
+              <span className="font-semibold">Savat</span>
+              <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary tabular-nums">{itemCount}</span>
+            </span>
+            <span className="truncate font-semibold tabular-nums">{formatMoney(som(totals.total))}</span>
+          </Button>
+          <Button className="h-12 shrink-0 rounded-xl px-5 text-base" disabled={itemCount === 0} onClick={openPay}>
+            To‘lash
+          </Button>
+        </div>
       </div>
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
         <SheetContent

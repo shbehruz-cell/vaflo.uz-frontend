@@ -3,7 +3,6 @@
 import { useState } from "react"
 import { Minus, Plus, ShoppingCart, Trash2, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Kbd } from "@/components/ui/kbd"
 import {
   AlertDialog,
@@ -16,6 +15,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { formatMoney, formatQty, UNIT_LABELS } from "@/lib/format"
+import { cn } from "@/lib/utils"
 import { CustomerPicker, type PickedCustomer } from "./customer-picker"
 import { cartMath, isIntegerUnit, lineMath, sanitizeQty, som, type CartLine } from "./types"
 
@@ -53,98 +53,108 @@ export function CartPanel({
 
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col gap-3">
+      {/* Sarlavha: savat, tozalash, (mobilda) yopish */}
       <div className="flex items-center justify-between gap-2">
         <h2 className="flex items-center gap-2 font-semibold">
           <ShoppingCart className="size-4 text-primary" /> Savat
-          <span className="text-sm font-normal text-muted-foreground">({lines.length})</span>
+          {lines.length > 0 && (
+            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary tabular-nums">{lines.length}</span>
+          )}
         </h2>
         <div className="flex items-center gap-1">
           {lines.length > 0 && (
             <Button
               variant="ghost"
               size="sm"
-              className="h-10 text-destructive hover:bg-destructive/10 hover:text-destructive lg:h-8"
+              className="h-10 text-muted-foreground hover:bg-destructive/10 hover:text-destructive lg:h-8"
               onClick={() => setConfirmClear(true)}
             >
               <Trash2 /> Tozalash
             </Button>
           )}
           {onClose && (
-            <>
-              <span aria-hidden className="mx-1 h-5 w-px bg-border" />
-              <Button variant="ghost" size="icon" className="size-10" aria-label="Savatni yopish" onClick={onClose}>
-                <X />
-              </Button>
-            </>
+            <Button variant="ghost" size="icon" className="size-10" aria-label="Savatni yopish" onClick={onClose}>
+              <X />
+            </Button>
           )}
         </div>
       </div>
 
       <CustomerPicker value={customer} onChange={onCustomer} />
 
-      <div className="-mx-1 min-h-0 flex-1 space-y-2 overflow-y-auto px-1">
+      {/* Mahsulotlar: bitta yuzada, ixcham qatorlar */}
+      <div className="-mx-1 min-h-0 flex-1 overflow-y-auto px-1">
         {lines.length === 0 ? (
-          <div className="flex h-full min-h-40 flex-col items-center justify-center gap-2 rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+          <div className="flex h-full min-h-40 flex-col items-center justify-center gap-2 rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">
             <ShoppingCart className="size-8 opacity-50" />
             Savat bo‘sh. Shtrix-kodni skanerlang yoki mahsulotni tanlang.
           </div>
         ) : (
-          lines.map((l) => {
-            const m = lineMath(l)
-            const stock = l.product.qty != null ? Number(l.product.qty) : null
-            const over = stock != null && Number(l.qty || 0) > stock
-            return (
-              <div key={l.product.id} className="rounded-lg border bg-card p-3 lg:p-2.5">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <div className="truncate text-sm font-medium">{l.product.name}</div>
-                    <div className="text-xs text-muted-foreground tabular-nums">
-                      {formatMoney(l.product.salePrice)} / {UNIT_LABELS[l.product.unit]}
+          <ul className="divide-y rounded-xl border bg-card">
+            {lines.map((l) => {
+              const m = lineMath(l)
+              const stock = l.product.qty != null ? Number(l.product.qty) : null
+              const over = stock != null && Number(l.qty || 0) > stock
+              const last = Number(l.qty || 0) <= 1
+              return (
+                <li key={l.product.id} className="px-3 py-2.5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="line-clamp-2 min-w-0 text-sm leading-snug font-medium">{l.product.name}</div>
+                    <div className="shrink-0 pt-px text-sm font-semibold tabular-nums">{formatMoney(som(m.gross))}</div>
+                  </div>
+
+                  <div className="mt-1.5 flex items-center justify-between gap-2">
+                    <div className="min-w-0 text-xs tabular-nums">
+                      <div className="truncate text-muted-foreground">
+                        {formatMoney(l.product.salePrice)} / {UNIT_LABELS[l.product.unit]}
+                      </div>
+                      {over && (
+                        <div className="truncate font-medium text-amber-700 dark:text-amber-300">
+                          Omborda {formatQty(stock)} {UNIT_LABELS[l.product.unit]}
+                        </div>
+                      )}
+                    </div>
+                    {/* Miqdor: 1 da "−" o‘rnida savatdan olib tashlash */}
+                    <div className="flex shrink-0 items-center rounded-xl border bg-background">
+                      <button
+                        type="button"
+                        aria-label={last ? `${l.product.name} ni olib tashlash` : "Kamaytirish"}
+                        onClick={() => step(l, -1)}
+                        className={cn(
+                          "flex size-10 items-center justify-center rounded-l-xl outline-none active:bg-muted focus-visible:ring-2 focus-visible:ring-ring lg:size-8",
+                          last ? "text-destructive" : "text-foreground",
+                        )}
+                      >
+                        {last ? <Trash2 className="size-4" /> : <Minus className="size-4" />}
+                      </button>
+                      <input
+                        inputMode={isIntegerUnit(l.product.unit) ? "numeric" : "decimal"}
+                        aria-label={`${l.product.name}: miqdor`}
+                        className="h-10 w-12 border-x bg-transparent text-center text-sm font-semibold tabular-nums outline-none focus-visible:bg-muted/50 lg:h-8"
+                        value={l.qty}
+                        onChange={(e) => actions.setQty(l.product.id, sanitizeQty(e.target.value, l.product.unit))}
+                        onFocus={(e) => e.currentTarget.select()}
+                      />
+                      <button
+                        type="button"
+                        aria-label="Ko‘paytirish"
+                        onClick={() => step(l, 1)}
+                        className="flex size-10 items-center justify-center rounded-r-xl text-foreground outline-none active:bg-muted focus-visible:ring-2 focus-visible:ring-ring lg:size-8"
+                      >
+                        <Plus className="size-4" />
+                      </button>
                     </div>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="-mt-1 -mr-1 size-10 shrink-0 text-muted-foreground hover:text-destructive lg:size-8"
-                    aria-label={`${l.product.name} ni olib tashlash`}
-                    onClick={() => actions.remove(l.product.id)}
-                  >
-                    <Trash2 />
-                  </Button>
-                </div>
-                <div className="mt-3 flex items-center justify-between gap-3 lg:mt-2">
-                  <div className="flex items-center gap-1.5 lg:gap-1">
-                    <Button variant="outline" size="icon" className="size-11 lg:size-9" aria-label="Kamaytirish" onClick={() => step(l, -1)}>
-                      <Minus />
-                    </Button>
-                    <Input
-                      inputMode={isIntegerUnit(l.product.unit) ? "numeric" : "decimal"}
-                      aria-label="Miqdor"
-                      className="h-11 w-16 text-center tabular-nums lg:h-9"
-                      value={l.qty}
-                      onChange={(e) => actions.setQty(l.product.id, sanitizeQty(e.target.value, l.product.unit))}
-                      onFocus={(e) => e.currentTarget.select()}
-                    />
-                    <Button variant="outline" size="icon" className="size-11 lg:size-9" aria-label="Ko‘paytirish" onClick={() => step(l, 1)}>
-                      <Plus />
-                    </Button>
-                    <span className="ml-1 text-xs text-muted-foreground">{UNIT_LABELS[l.product.unit]}</span>
-                  </div>
-                  <div className="text-right text-base font-semibold tabular-nums lg:text-sm">{formatMoney(som(m.gross))}</div>
-                </div>
-                {over && (
-                  <p className="mt-2 rounded-md bg-amber-500/10 px-2 py-1.5 text-xs text-amber-700 dark:text-amber-300">
-                    Qoldiqdan ko‘p: omborda {formatQty(stock)} {UNIT_LABELS[l.product.unit]}
-                  </p>
-                )}
-              </div>
-            )
-          })
+                </li>
+              )
+            })}
+          </ul>
         )}
       </div>
 
-      <div>
-        <div className="receipt px-4 pt-4 text-sm">
+      {/* Hisob: kompyuterda chek ko‘rinishi, telefonda ixcham qator */}
+      <div className="shrink-0">
+        <div className="receipt hidden px-4 pt-4 text-sm lg:block">
           <div className="flex justify-between text-muted-foreground">
             <span>Oraliq summa</span>
             <span className="tabular-nums">{formatMoney(som(totals.subtotal))}</span>
@@ -158,11 +168,23 @@ export function CartPanel({
           <hr className="receipt-rule my-3" />
           <div className="flex items-baseline justify-between gap-2">
             <span className="font-medium">Jami</span>
-            <span className="text-2xl font-bold tracking-tight tabular-nums lg:text-3xl">{formatMoney(som(totals.total))}</span>
+            <span className="text-3xl font-bold tracking-tight tabular-nums">{formatMoney(som(totals.total))}</span>
           </div>
         </div>
-        <Button size="lg" className="mt-3 h-12 w-full text-base" disabled={!totals.valid} onClick={onPay}>
-          To‘lovga o‘tish <Kbd className="ml-1 hidden bg-primary-foreground/20 text-primary-foreground pointer-fine:inline-flex">F9</Kbd>
+
+        <div className="flex items-center justify-between gap-3 px-1 text-sm lg:hidden">
+          <span className="text-muted-foreground tabular-nums">
+            {lines.length} ta mahsulot
+          </span>
+          {totals.discount > 0 && <span className="text-primary tabular-nums">Chegirma −{formatMoney(som(totals.discount))}</span>}
+        </div>
+
+        <Button size="lg" className="mt-2.5 h-14 w-full justify-between rounded-xl px-5 text-base lg:mt-3 lg:h-12" disabled={!totals.valid} onClick={onPay}>
+          <span className="flex items-center gap-2">
+            To‘lash
+            <Kbd className="hidden bg-primary-foreground/20 text-primary-foreground pointer-fine:inline-flex">F9</Kbd>
+          </span>
+          <span className="text-lg font-bold tabular-nums lg:text-base">{formatMoney(som(totals.total))}</span>
         </Button>
       </div>
 
