@@ -2,9 +2,8 @@
 
 import { useEffect, useRef, useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
-import { AlertCircle, Check, ImagePlus, Sparkles, X } from "lucide-react"
+import { AlertCircle, Check, ChevronRight, ImagePlus, Sparkles, X } from "lucide-react"
 import { toast } from "sonner"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -13,10 +12,11 @@ import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Spinner } from "@/components/ui/spinner"
 import { api, ApiError } from "@/lib/api"
-import { UNIT_LABELS } from "@/lib/format"
+import { useAuth } from "@/lib/auth"
+import { UNIT_LABELS, formatMoney } from "@/lib/format"
 import { isFinePointer } from "@/lib/pointer"
 import { cn } from "@/lib/utils"
-import { NATIVE_SELECT, WARN_BADGE, useCategories, type Category, type Product } from "./common"
+import { NATIVE_SELECT, useCategories, type Category, type Product } from "./common"
 
 const MAX_IMAGES = 5
 const MAX_SIDE = 1600
@@ -34,6 +34,8 @@ interface Draft {
   name: string
   unit: string
   price: string
+  cost: string
+  qty: string
   barcode: string
   cat: string
   newCategoryName: string | null
@@ -48,6 +50,8 @@ interface ApiDraft {
   name: string
   unit: string
   salePrice: string | null
+  costPrice?: string | null
+  initialQty?: string | null
   barcode: string | null
   categoryId: string | null
   newCategoryName: string | null
@@ -56,9 +60,11 @@ interface ApiDraft {
   notes: string | null
 }
 
-const CONFIDENCE: Record<Draft["confidence"], string> = { high: "Yuqori", medium: "O‘rta", low: "Past" }
+const CONFIDENCE: Record<Draft["confidence"], string> = { high: "Ishonch yuqori", medium: "Ishonch o‘rtacha", low: "Ishonch past" }
 const clean = (s: string) => s.trim().replace(/\s+/g, "").replace(",", ".")
 const validPrice = (s: string) => /^\d{1,12}(\.\d{1,2})?$/.test(clean(s))
+const validQty = (s: string) => /^\d{1,12}(\.\d{1,3})?$/.test(clean(s))
+const numStr = (s: string | null | undefined) => (s ? String(Number(s)) : "")
 const money = (s: string) => {
   const c = clean(s)
   if (!c.includes(".")) return `${c}.00`
@@ -123,7 +129,11 @@ export function AiImportDialog({ open, onOpenChange }: { open: boolean; onOpenCh
 
 function Body({ onClose }: { onClose: () => void }) {
   const qc = useQueryClient()
+  const { can } = useAuth()
+  const canCost = can("costs.read")
   const { data: categories } = useCategories()
+  const [openId, setOpenId] = useState<string | null>(null)
+  const [triedSubmit, setTriedSubmit] = useState(false)
   const [step, setStep] = useState<"photos" | "analyzing" | "results">("photos")
   const [images, setImages] = useState<Img[]>([])
   const [fileErrors, setFileErrors] = useState<string[]>([])
@@ -196,7 +206,9 @@ function Body({ onClose }: { onClose: () => void }) {
           checked: d.confidence !== "low",
           name: d.name,
           unit: d.unit in UNIT_LABELS ? d.unit : "PIECE",
-          price: d.salePrice ? String(Number(d.salePrice)) : "",
+          price: numStr(d.salePrice),
+          cost: numStr(d.costPrice),
+          qty: numStr(d.initialQty),
           barcode: d.barcode ?? "",
           cat: d.categoryId ?? (d.newCategoryName ? NEW_CAT : ""),
           newCategoryName: d.categoryId ? null : d.newCategoryName,
@@ -207,6 +219,8 @@ function Body({ onClose }: { onClose: () => void }) {
           error: null,
         })),
       )
+      setOpenId(null)
+      setTriedSubmit(false)
       setStep("results")
     } catch (e) {
       if (ac.signal.aborted || (e instanceof DOMException && e.name === "AbortError")) return
@@ -222,9 +236,18 @@ function Body({ onClose }: { onClose: () => void }) {
 
   const patch = (id: string, p: Partial<Draft>) => setDrafts((ds) => ds.map((d) => (d.id === id ? { ...d, ...p } : d)))
   const isReady = (d: Draft) => d.checked && d.status !== "done" && d.name.trim() !== "" && validPrice(d.price)
-  const readyCount = drafts.filter(isReady).length
+  const selectable = drafts.filter((d) => d.status !== "done")
+  const allChecked = selectable.length > 0 && selectable.every((d) => d.checked)
+  const checkedCount = drafts.filter((d) => d.checked && d.status !== "done").length
 
   async function confirm() {
+    const incomplete = drafts.find((d) => d.checked && d.status !== "done" && (d.name.trim() === "" || !validPrice(d.price)))
+    if (incomplete) {
+      setTriedSubmit(true)
+      setOpenId(incomplete.id)
+      setTimeout(() => document.getElementById(`ai-row-${incomplete.id}`)?.scrollIntoView({ block: "nearest", behavior: "smooth" }), 50)
+      return
+    }
     const todo = drafts.filter(isReady)
     if (!todo.length) return
     setSubmitting(true)
@@ -245,12 +268,16 @@ function Body({ onClose }: { onClose: () => void }) {
         if (d.cat === NEW_CAT && d.newCategoryName) categoryId = await catId(d.newCategoryName)
         else if (d.cat && d.cat !== NEW_CAT) categoryId = d.cat
         const bc = d.barcode.trim()
+        const cp = clean(d.cost)
+        const iq = clean(d.qty)
         await api.post<Product>("/products", {
           name: d.name.trim(),
           unit: d.unit,
           salePrice: money(d.price),
           barcodes: bc ? [bc] : [],
           ...(categoryId && { categoryId }),
+          ...(canCost && cp && validPrice(cp) && { costPrice: money(cp) }),
+          ...(iq && validQty(iq) && { initialQty: iq }),
         })
         okCount++
         patch(d.id, { status: "done", checked: false })
@@ -283,7 +310,7 @@ function Body({ onClose }: { onClose: () => void }) {
         <DialogDescription>
           {step === "results"
             ? found
-              ? `${found} ta mahsulot topildi. Tekshirib, kerakli joyini tuzating.`
+              ? "Tekshirib, kerak bo‘lsa mahsulotni bosib tuzating."
               : "Rasmlardan mahsulot topilmadi."
             : "Mahsulot rasmlarini yuboring — AI nomi, narxi va shtrix-kodini o‘zi to‘ldiradi."}
         </DialogDescription>
@@ -338,7 +365,7 @@ function Body({ onClose }: { onClose: () => void }) {
           </label>
 
           <p className="text-xs text-muted-foreground">
-            Eng yaxshi natija uchun: qadoqning old tomoni (nomi ko‘rinsin), narx yorlig‘i va shtrix-kod aniq tushsin. Har bir mahsulotni alohida rasmga olish shart emas — bir rasmda bir nechta bo‘lishi mumkin.
+            Eng yaxshi natija uchun: qadoqning old tomoni (nomi ko‘rinsin), narx yorlig‘i va shtrix-kod aniq tushsin. Har bir mahsulotni alohida rasmga olish shart emas — bir rasmda bir nechta bo‘lishi mumkin. Qog‘ozdagi narx ro‘yxatini ham suratga olsangiz bo‘ladi — ustunlar (nomi, narxi, tannarx) avtomatik ajratiladi.
           </p>
 
           {fileErrors.length > 0 && (
@@ -421,10 +448,36 @@ function Body({ onClose }: { onClose: () => void }) {
               </Button>
             </div>
           ) : (
-            <div className="space-y-3">
-              {drafts.map((d) => (
-                <DraftCard key={d.id} d={d} image={d.imageIndex !== null ? images[d.imageIndex] : undefined} categories={categories ?? []} onChange={(p) => patch(d.id, p)} disabled={submitting} />
-              ))}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="text-base font-semibold">{found} ta mahsulot topildi</h3>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-9 text-xs max-sm:h-11"
+                  disabled={submitting || selectable.length === 0}
+                  onClick={() => setDrafts((ds) => ds.map((d) => (d.status === "done" ? d : { ...d, checked: !allChecked })))}
+                >
+                  {allChecked ? "Belgini olib tashlash" : "Hammasini belgilash"}
+                </Button>
+              </div>
+              <div className="divide-y overflow-hidden rounded-2xl border bg-card">
+                {drafts.map((d) => (
+                  <DraftRow
+                    key={d.id}
+                    d={d}
+                    open={openId === d.id}
+                    onToggle={() => setOpenId((cur) => (cur === d.id ? null : d.id))}
+                    showErrors={triedSubmit}
+                    canCost={canCost}
+                    image={d.imageIndex !== null ? images[d.imageIndex] : undefined}
+                    categories={categories ?? []}
+                    onChange={(p) => patch(d.id, p)}
+                    disabled={submitting}
+                  />
+                ))}
+              </div>
             </div>
           )}
 
@@ -433,8 +486,8 @@ function Body({ onClose }: { onClose: () => void }) {
               <Button type="button" variant="outline" className="h-11 sm:h-10" disabled={submitting} onClick={() => setStep("photos")}>
                 Orqaga
               </Button>
-              <Button type="button" className="h-11 sm:h-10" disabled={readyCount === 0 || submitting} onClick={confirm}>
-                {submitting && <Spinner />} {readyCount} ta mahsulotni qo‘shish
+              <Button type="button" className="h-11 sm:h-10" disabled={checkedCount === 0 || submitting} onClick={confirm}>
+                {submitting && <Spinner />} {checkedCount} ta mahsulotni qo‘shish
               </Button>
             </DialogFooter>
           )}
@@ -444,14 +497,25 @@ function Body({ onClose }: { onClose: () => void }) {
   )
 }
 
-function DraftCard({
+const DOT: Record<Draft["confidence"], string> = { high: "bg-emerald-500", medium: "bg-amber-500", low: "bg-destructive" }
+const AMBER_PILL = "rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-300"
+
+function DraftRow({
   d,
+  open,
+  onToggle,
+  showErrors,
+  canCost,
   image,
   categories,
   onChange,
   disabled,
 }: {
   d: Draft
+  open: boolean
+  onToggle: () => void
+  showErrors: boolean
+  canCost: boolean
   image?: Img
   categories: Category[]
   onChange: (p: Partial<Draft>) => void
@@ -459,14 +523,19 @@ function DraftCard({
 }) {
   const done = d.status === "done"
   const lock = done || disabled || d.status === "saving"
-  const priceMissing = !done && !validPrice(d.price)
+  const priceOk = validPrice(d.price)
+  const priceMissing = !done && !priceOk
   const nameMissing = !done && d.name.trim() === ""
+  const costOk = canCost && d.cost !== "" && validPrice(d.cost)
+  const costBad = canCost && d.cost !== "" && !validPrice(d.cost)
+  const qtyBad = d.qty !== "" && !validQty(d.qty)
   const id = `ai-${d.id}`
+  const hint = !done && d.confidence === "low"
 
   return (
-    <div className={cn("rounded-xl border bg-card p-3", done && "bg-muted/40", !d.checked && !done && "opacity-80")}>
-      <div className="flex items-start gap-3">
-        <div className="flex size-11 shrink-0 items-center justify-center">
+    <div id={`ai-row-${d.id}`} className={cn(done && "bg-muted/40", !d.checked && !done && "bg-muted/20")}>
+      <div className="flex items-stretch">
+        <div className="flex w-12 shrink-0 items-center justify-center">
           {d.status === "saving" ? (
             <Spinner className="size-5 text-primary" />
           ) : done ? (
@@ -477,74 +546,119 @@ function DraftCard({
             <Checkbox checked={d.checked} disabled={lock} onCheckedChange={(v) => onChange({ checked: !!v })} aria-label="Qo‘shish uchun tanlash" />
           )}
         </div>
-        {image && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={image.url} alt="" className="size-11 shrink-0 rounded-lg border object-cover" />
-        )}
-        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 pt-1.5">
-          <Badge className={d.confidence === "low" ? WARN_BADGE : undefined} variant={d.confidence === "high" ? "default" : d.confidence === "medium" ? "secondary" : "outline"}>
-            {CONFIDENCE[d.confidence]}
-          </Badge>
-          {done && <span className="text-xs text-muted-foreground">Qo‘shildi</span>}
-        </div>
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-controls={`${id}-panel`}
+          onClick={onToggle}
+          className="flex min-h-14 min-w-0 flex-1 items-center gap-3 py-2 pr-3 text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+        >
+          <span className="min-w-0 flex-1">
+            <span className="flex items-start gap-2">
+              <span className={cn("mt-1.5 size-2 shrink-0 rounded-full", DOT[d.confidence])} role="img" aria-label={CONFIDENCE[d.confidence]} title={CONFIDENCE[d.confidence]} />
+              <span className="line-clamp-2 text-sm font-medium break-words">{d.name.trim() || "Nomsiz mahsulot"}</span>
+            </span>
+            {(hint || costOk || done) && (
+              <span className="mt-0.5 flex flex-wrap items-center gap-x-2 pl-4 text-xs text-muted-foreground">
+                {done && <span>Qo‘shildi</span>}
+                {hint && <span className="font-medium text-amber-700 dark:text-amber-300">Tekshiring</span>}
+                {costOk && !done && <span className="tabular-nums md:hidden">Tannarx {formatMoney(clean(d.cost), false)}</span>}
+              </span>
+            )}
+          </span>
+          {costOk && <span className="hidden w-24 shrink-0 text-right text-xs text-muted-foreground tabular-nums md:block">{formatMoney(clean(d.cost), false)}</span>}
+          <span className="shrink-0 text-right">
+            {priceOk ? (
+              <span className="text-sm font-bold tabular-nums">{formatMoney(clean(d.price), false)}</span>
+            ) : (
+              <span className={cn(AMBER_PILL, showErrors && d.checked && "ring-1 ring-amber-500")}>Narx kiriting</span>
+            )}
+          </span>
+          <ChevronRight className={cn("size-4 shrink-0 text-muted-foreground transition-transform", open && "rotate-90")} />
+        </button>
       </div>
 
-      <div className="mt-3 grid gap-3 sm:grid-cols-2">
-        <Field className="sm:col-span-2" data-invalid={nameMissing || undefined}>
-          <FieldLabel htmlFor={`${id}-name`}>Nomi *</FieldLabel>
-          <Input id={`${id}-name`} className="h-11 sm:h-10" value={d.name} disabled={lock} aria-invalid={nameMissing || undefined} onChange={(e) => onChange({ name: e.target.value })} />
-        </Field>
-        <Field>
-          <FieldLabel htmlFor={`${id}-unit`}>Birlik</FieldLabel>
-          <select id={`${id}-unit`} className={cn(NATIVE_SELECT, "max-sm:h-11")} value={d.unit} disabled={lock} onChange={(e) => onChange({ unit: e.target.value })}>
-            {Object.entries(UNIT_LABELS).map(([k, v]) => (
-              <option key={k} value={k}>
-                {v}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field data-invalid={priceMissing || undefined}>
-          <FieldLabel htmlFor={`${id}-price`}>Sotuv narxi (so‘m) *</FieldLabel>
-          <Input
-            id={`${id}-price`}
-            inputMode="decimal"
-            className={cn("h-11 sm:h-10", priceMissing && d.price === "" && "border-amber-500 bg-amber-500/10 dark:border-amber-400")}
-            value={d.price}
-            disabled={lock}
-            placeholder="0"
-            aria-invalid={(priceMissing && d.price !== "") || undefined}
-            onChange={(e) => onChange({ price: e.target.value })}
-          />
-          {priceMissing && (
-            <FieldError className={d.price === "" ? "text-amber-700 dark:text-amber-300" : undefined}>
-              {d.price === "" ? "Narxni kiriting" : "Narxni to‘g‘ri kiriting (masalan 12500)"}
-            </FieldError>
-          )}
-        </Field>
-        <Field>
-          <FieldLabel htmlFor={`${id}-bc`}>Shtrix-kod</FieldLabel>
-          <Input id={`${id}-bc`} inputMode="numeric" className="h-11 tabular-nums sm:h-10" value={d.barcode} disabled={lock} onChange={(e) => onChange({ barcode: e.target.value })} />
-        </Field>
-        <Field>
-          <FieldLabel htmlFor={`${id}-cat`}>Kategoriya</FieldLabel>
-          <select id={`${id}-cat`} className={cn(NATIVE_SELECT, "max-sm:h-11")} value={d.cat} disabled={lock} onChange={(e) => onChange({ cat: e.target.value })}>
-            <option value="">Kategoriyasiz</option>
-            {d.newCategoryName && <option value={NEW_CAT}>Yangi: {d.newCategoryName}</option>}
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        </Field>
-      </div>
-
-      {d.notes && <p className="mt-2 text-xs text-muted-foreground">{d.notes}</p>}
       {d.status === "error" && d.error && (
-        <p role="alert" className="mt-2 flex items-start gap-1.5 text-sm text-destructive">
+        <p role="alert" className="flex items-start gap-1.5 px-3 pb-2 pl-12 text-sm text-destructive">
           <AlertCircle className="mt-0.5 size-4 shrink-0" /> {d.error}
         </p>
+      )}
+
+      {open && (
+        <div id={`${id}-panel`} className="border-t bg-muted/30 p-3 pl-3 md:pl-12">
+          <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
+            <Field className="sm:col-span-2 md:col-span-3" data-invalid={nameMissing || undefined}>
+              <FieldLabel htmlFor={`${id}-name`}>Nomi *</FieldLabel>
+              <Input id={`${id}-name`} className="h-11 sm:h-10" value={d.name} disabled={lock} aria-invalid={nameMissing || undefined} onChange={(e) => onChange({ name: e.target.value })} />
+            </Field>
+            <Field data-invalid={priceMissing || undefined}>
+              <FieldLabel htmlFor={`${id}-price`}>Sotuv narxi (so‘m) *</FieldLabel>
+              <Input
+                id={`${id}-price`}
+                inputMode="decimal"
+                className={cn("h-11 sm:h-10", priceMissing && d.price === "" && "border-amber-500 bg-amber-500/10 dark:border-amber-400")}
+                value={d.price}
+                disabled={lock}
+                placeholder="0"
+                autoFocus={showErrors && priceMissing && isFinePointer()}
+                aria-invalid={(priceMissing && d.price !== "") || undefined}
+                onChange={(e) => onChange({ price: e.target.value })}
+              />
+              {priceMissing && (
+                <FieldError className={d.price === "" ? "text-amber-700 dark:text-amber-300" : undefined}>
+                  {d.price === "" ? "Narxni kiriting" : "Narxni to‘g‘ri kiriting (masalan 12500)"}
+                </FieldError>
+              )}
+            </Field>
+            {canCost && (
+              <Field data-invalid={costBad || undefined}>
+                <FieldLabel htmlFor={`${id}-cost`}>Tannarx (so‘m)</FieldLabel>
+                <Input id={`${id}-cost`} inputMode="decimal" className="h-11 sm:h-10" value={d.cost} disabled={lock} placeholder="0" aria-invalid={costBad || undefined} onChange={(e) => onChange({ cost: e.target.value })} />
+                {costBad && <FieldError>Tannarxni to‘g‘ri kiriting</FieldError>}
+              </Field>
+            )}
+            <Field data-invalid={qtyBad || undefined}>
+              <FieldLabel htmlFor={`${id}-qty`}>Boshlang‘ich qoldiq</FieldLabel>
+              <Input id={`${id}-qty`} inputMode="decimal" className="h-11 sm:h-10" value={d.qty} disabled={lock} placeholder="0" aria-invalid={qtyBad || undefined} onChange={(e) => onChange({ qty: e.target.value })} />
+              {qtyBad && <FieldError>Miqdorni to‘g‘ri kiriting</FieldError>}
+            </Field>
+            <Field>
+              <FieldLabel htmlFor={`${id}-unit`}>Birlik</FieldLabel>
+              <select id={`${id}-unit`} className={cn(NATIVE_SELECT, "max-sm:h-11")} value={d.unit} disabled={lock} onChange={(e) => onChange({ unit: e.target.value })}>
+                {Object.entries(UNIT_LABELS).map(([k, v]) => (
+                  <option key={k} value={k}>
+                    {v}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field>
+              <FieldLabel htmlFor={`${id}-bc`}>Shtrix-kod</FieldLabel>
+              <Input id={`${id}-bc`} inputMode="numeric" className="h-11 tabular-nums sm:h-10" value={d.barcode} disabled={lock} onChange={(e) => onChange({ barcode: e.target.value })} />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor={`${id}-cat`}>Kategoriya</FieldLabel>
+              <select id={`${id}-cat`} className={cn(NATIVE_SELECT, "max-sm:h-11")} value={d.cat} disabled={lock} onChange={(e) => onChange({ cat: e.target.value })}>
+                <option value="">Kategoriyasiz</option>
+                {d.newCategoryName && <option value={NEW_CAT}>Yangi: {d.newCategoryName}</option>}
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          </div>
+          {(d.notes || image) && (
+            <div className="mt-3 flex items-start gap-3">
+              {image && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={image.url} alt="Manba rasm" className="size-16 shrink-0 rounded-lg border object-cover" />
+              )}
+              {d.notes && <p className="text-xs text-muted-foreground">{d.notes}</p>}
+            </div>
+          )}
+        </div>
       )}
     </div>
   )
