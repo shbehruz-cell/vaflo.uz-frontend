@@ -50,20 +50,23 @@ export function toQuery(params?: Query) {
   return s ? `?${s}` : ""
 }
 
-async function request<T>(method: string, path: string, body?: unknown, retry = true): Promise<T> {
+async function request<T>(method: string, path: string, body?: unknown, retry = true, signal?: AbortSignal): Promise<T> {
+  const isForm = typeof FormData !== "undefined" && body instanceof FormData
   const res = await fetch(`/api/v1${path}`, {
     method,
     credentials: "include",
+    signal,
     headers: {
-      ...(body !== undefined && { "content-type": "application/json" }),
+      // FormData bo‘lsa content-type ni brauzer o‘zi (boundary bilan) qo‘yadi
+      ...(body !== undefined && !isForm && { "content-type": "application/json" }),
       ...(accessToken && { authorization: `Bearer ${accessToken}` }),
     },
-    body: body !== undefined ? JSON.stringify(body) : undefined,
+    body: body === undefined ? undefined : isForm ? (body as FormData) : JSON.stringify(body),
   })
 
   if (res.status === 401 && retry && !path.startsWith("/auth/")) {
     const t = await refreshAccessToken()
-    if (t) return request<T>(method, path, body, false)
+    if (t) return request<T>(method, path, body, false, signal)
     onUnauthorized?.()
   }
 
@@ -103,6 +106,8 @@ export const api = {
   post: <T>(path: string, body?: unknown) => request<T>("POST", path, body ?? {}),
   patch: <T>(path: string, body?: unknown) => request<T>("PATCH", path, body ?? {}),
   delete: <T>(path: string) => request<T>("DELETE", path),
+  /** multipart/form-data yuborish (rasm yuklash). */
+  postForm: <T>(path: string, formData: FormData, signal?: AbortSignal) => request<T>("POST", path, formData, true, signal),
 }
 
 /** Backend `paginated()` javobi. */

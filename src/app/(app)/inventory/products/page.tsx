@@ -3,7 +3,8 @@
 import { Suspense, useEffect, useState } from "react"
 import Link from "next/link"
 import { useQuery } from "@tanstack/react-query"
-import { Archive, ClipboardList, FileSpreadsheet, MoreHorizontal, Pencil, Plus, RotateCcw } from "lucide-react"
+import { Archive, ClipboardList, FileSpreadsheet, MoreHorizontal, Pencil, Plus, RotateCcw, Sparkles } from "lucide-react"
+import { AiImportDialog } from "@/components/inventory/ai-import-dialog"
 import { ArchiveDialog } from "@/components/inventory/archive-dialog"
 import { ActiveBadge, NATIVE_SELECT, TABLE_CARD, THEAD, TROW, WARN_BADGE, useCategories, type Product } from "@/components/inventory/common"
 import { ProductFormDialog } from "@/components/inventory/product-form"
@@ -73,6 +74,7 @@ function ProductsView() {
 
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<Product | null>(null)
+  const [aiOpen, setAiOpen] = useState(false)
   const [archiving, setArchiving] = useState<Product | null>(null)
 
   const openCreate = () => {
@@ -150,6 +152,9 @@ function ProductsView() {
         actions={
           canManage && (
             <>
+              <Button variant="outline" className="h-10 max-sm:w-10 max-sm:px-0" aria-label="AI bilan qo‘shish" onClick={() => setAiOpen(true)}>
+                <Sparkles /> <span className="hidden sm:inline">AI bilan qo‘shish</span>
+              </Button>
               <Button
                 variant="outline"
                 className="h-10 max-sm:w-10 max-sm:px-0"
@@ -285,6 +290,7 @@ function ProductsView() {
       )}
 
       <ProductFormDialog open={formOpen} onOpenChange={setFormOpen} product={editing} />
+      {canManage && <AiImportDialog open={aiOpen} onOpenChange={setAiOpen} />}
       <ArchiveDialog product={archiving} onClose={() => setArchiving(null)} />
     </div>
   )
