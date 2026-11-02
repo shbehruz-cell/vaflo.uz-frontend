@@ -152,8 +152,8 @@ function ProductsView() {
         actions={
           canManage && (
             <>
-              <Button variant="outline" className="h-10 max-sm:w-10 max-sm:px-0" aria-label="AI bilan qo‘shish" onClick={() => setAiOpen(true)}>
-                <Sparkles /> <span className="hidden sm:inline">AI bilan qo‘shish</span>
+              <Button variant="outline" className="h-10 max-sm:w-10 max-sm:px-0" aria-label="Ro‘yxat rasmidan qo‘shish (AI)" onClick={() => setAiOpen(true)}>
+                <Sparkles /> <span className="hidden sm:inline">Ro‘yxatdan qo‘shish</span>
               </Button>
               <Button
                 variant="outline"

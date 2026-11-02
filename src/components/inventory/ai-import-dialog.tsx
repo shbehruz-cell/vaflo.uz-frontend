@@ -305,14 +305,14 @@ function Body({ onClose }: { onClose: () => void }) {
     <>
       <DialogHeader>
         <DialogTitle className="flex items-center gap-2 leading-tight">
-          <Sparkles className="size-4 text-primary" /> AI bilan qo‘shish
+          <Sparkles className="size-4 text-primary" /> Ro‘yxatdan qo‘shish (AI)
         </DialogTitle>
         <DialogDescription>
           {step === "results"
             ? found
               ? "Tekshirib, kerak bo‘lsa mahsulotni bosib tuzating."
-              : "Rasmlardan mahsulot topilmadi."
-            : "Mahsulot rasmlarini yuboring — AI nomi, narxi va shtrix-kodini o‘zi to‘ldiradi."}
+              : "Rasmdan mahsulot ro‘yxati topilmadi."
+            : "Qog‘ozdagi mahsulotlar ro‘yxatini (spiskani) suratga oling — AI har bir qatorni o‘qib, nomi va narxini o‘zi to‘ldiradi."}
         </DialogDescription>
       </DialogHeader>
 
@@ -358,14 +358,14 @@ function Body({ onClose }: { onClose: () => void }) {
               }}
             />
             {processing ? <Spinner className="size-6 text-primary" /> : <ImagePlus className="size-7 text-primary" />}
-            <span className="text-base font-semibold">{processing ? "Rasmlar tayyorlanmoqda…" : "Rasm tanlang yoki suratga oling"}</span>
+            <span className="text-base font-semibold">{processing ? "Rasmlar tayyorlanmoqda…" : "Ro‘yxat rasmini tanlang yoki suratga oling"}</span>
             <span className="text-sm text-muted-foreground">
               {isFinePointer() ? "Bu yerga sudrab olib keling yoki bosing" : "Kamera yoki galereyadan"}
             </span>
           </label>
 
           <p className="text-xs text-muted-foreground">
-            Eng yaxshi natija uchun: qadoqning old tomoni (nomi ko‘rinsin), narx yorlig‘i va shtrix-kod aniq tushsin. Har bir mahsulotni alohida rasmga olish shart emas — bir rasmda bir nechta bo‘lishi mumkin. Qog‘ozdagi narx ro‘yxatini ham suratga olsangiz bo‘ladi — ustunlar (nomi, narxi, tannarx) avtomatik ajratiladi.
+            Eng yaxshi natija uchun: varaqni tekis qo‘yib, yorug‘ joyda tepadan suratga oling, barcha qatorlar kadrga tushsin. Ustun nomlari (nomi, narxi, tannarx, soni) yozilgan bo‘lsa — shunga qarab ajratiladi; yozilmagan bo‘lsa, nomi va narxi deb olinadi. Ro‘yxat uzun bo‘lsa, bir nechta rasm yuborishingiz mumkin (5 tagacha). Mahsulot qadog‘i yoki narx yorlig‘i rasmi ham bo‘ladi.
           </p>
 
           {fileErrors.length > 0 && (
@@ -412,7 +412,7 @@ function Body({ onClose }: { onClose: () => void }) {
         <>
           <div className="flex flex-col items-center gap-2 py-4 text-center" role="status" aria-live="polite">
             <Spinner className="size-6 text-primary" />
-            <span className="text-sm font-medium">AI rasmlarni o‘rganmoqda…</span>
+            <span className="text-sm font-medium">AI ro‘yxatni o‘qimoqda…</span>
             <span className="text-xs text-muted-foreground">Bu bir necha soniya olishi mumkin.</span>
           </div>
           <div className="space-y-2">
@@ -441,7 +441,7 @@ function Body({ onClose }: { onClose: () => void }) {
               <ImagePlus className="size-7 text-muted-foreground" />
               <div>
                 <div className="font-semibold">Mahsulot topilmadi</div>
-                <div className="text-sm text-muted-foreground">Rasmda mahsulot yoki yozuvlar aniq ko‘rinishini tekshiring.</div>
+                <div className="text-sm text-muted-foreground">Yozuvlar aniq va to‘liq tushganini tekshiring, yorug‘roq joyda qayta suratga oling.</div>
               </div>
               <Button type="button" variant="outline" className="h-11 sm:h-10" onClick={() => setStep("photos")}>
                 Boshqa rasm yuborish
