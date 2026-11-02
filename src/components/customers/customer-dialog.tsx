@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { FormSheet } from "@/components/app/form-sheet"
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -26,7 +26,7 @@ interface SaveResult {
   duplicateWarning: { id: string; name: string } | null
 }
 
-/** Xaridor qo‘shish / tahrirlash dialogi. `customer` berilsa — tahrirlash. */
+/** Xaridor qo‘shish / tahrirlash paneli. `customer` berilsa — tahrirlash. */
 export function CustomerDialog({
   open,
   onOpenChange,
@@ -39,11 +39,30 @@ export function CustomerDialog({
   const router = useRouter()
   const qc = useQueryClient()
   const [error, setError] = useState<string | null>(null)
+  const initial = {
+    name: customer?.name ?? "",
+    phone: customer?.phone ?? "",
+    address: customer?.address ?? "",
+    notes: customer?.notes ?? "",
+  }
+  const [form, setForm] = useState(initial)
+  const [formKey, setFormKey] = useState(0)
+  const [prev, setPrev] = useState({ open, id: customer?.id })
+  if (prev.open !== open || prev.id !== customer?.id) {
+    setPrev({ open, id: customer?.id })
+    if (open) {
+      setForm(initial)
+      setError(null)
+    }
+  }
+  const dirty = (Object.keys(initial) as (keyof typeof initial)[]).some((k) => form[k] !== initial[k])
+  const set = (k: keyof typeof initial) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+    setForm((f) => ({ ...f, [k]: e.target.value }))
 
   const mutation = useMutation({
-    mutationFn: (body: Record<string, string>) =>
+    mutationFn: ({ body }: { body: Record<string, string>; again: boolean }) =>
       customer ? api.patch<SaveResult>(`/customers/${customer.id}`, body) : api.post<SaveResult>("/customers", body),
-    onSuccess: (res) => {
+    onSuccess: (res, vars) => {
       toast.success(customer ? "Xaridor yangilandi" : "Xaridor qo‘shildi")
       if (res.duplicateWarning) {
         const dup = res.duplicateWarning
@@ -53,69 +72,80 @@ export function CustomerDialog({
         })
       }
       qc.invalidateQueries({ queryKey: ["customers"] })
-      onOpenChange(false)
+      if (vars.again && !customer) {
+        setForm({ name: "", phone: "", address: "", notes: "" })
+        setFormKey((k) => k + 1)
+      } else {
+        onOpenChange(false)
+      }
     },
     onError: (e: Error) => setError(e.message),
   })
 
-  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
+  function submit(again: boolean) {
     setError(null)
-    const f = new FormData(e.currentTarget)
-    const name = String(f.get("name") ?? "").trim()
+    const name = form.name.trim()
     if (!name) return setError("Ism kiritilishi shart")
     mutation.mutate({
-      name,
-      phone: String(f.get("phone") ?? "").trim(),
-      address: String(f.get("address") ?? "").trim(),
-      notes: String(f.get("notes") ?? "").trim(),
+      again,
+      body: { name, phone: form.phone.trim(), address: form.address.trim(), notes: form.notes.trim() },
     })
   }
 
   return (
-    <Dialog
+    <FormSheet
       open={open}
       onOpenChange={(o) => {
         if (o) setError(null)
         onOpenChange(o)
       }}
+      title={customer ? "Xaridorni tahrirlash" : "Xaridor qo‘shish"}
+      description="Xaridor ma’lumotlari chek va tarixda ko‘rinadi."
+      dirty={dirty && !mutation.isPending}
+      footer={
+        <>
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            Bekor qilish
+          </Button>
+          {!customer && (
+            <Button type="button" variant="secondary" disabled={mutation.isPending} onClick={() => submit(true)}>
+              Saqlash va yana qo‘shish
+            </Button>
+          )}
+          <Button type="submit" form="customer-form" disabled={mutation.isPending}>
+            {mutation.isPending ? "Saqlanmoqda…" : "Saqlash"}
+          </Button>
+        </>
+      }
     >
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{customer ? "Xaridorni tahrirlash" : "Xaridor qo‘shish"}</DialogTitle>
-          <DialogDescription>Xaridor ma’lumotlari chek va tarixda ko‘rinadi.</DialogDescription>
-        </DialogHeader>
-        <form onSubmit={onSubmit} className="space-y-4">
-          <FieldGroup>
-            <Field>
-              <FieldLabel htmlFor="c-name">Ism *</FieldLabel>
-              <Input id="c-name" name="name" className="h-10" defaultValue={customer?.name ?? ""} autoFocus={isFinePointer()} />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="c-phone">Telefon</FieldLabel>
-              <Input id="c-phone" name="phone" className="h-10" inputMode="tel" placeholder="+998 90 123 45 67" defaultValue={customer?.phone ?? ""} />
-              <FieldDescription>Format: +998 XX XXX XX XX</FieldDescription>
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="c-address">Manzil</FieldLabel>
-              <Input id="c-address" name="address" className="h-10" defaultValue={customer?.address ?? ""} />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="c-notes">Izoh</FieldLabel>
-              <Textarea id="c-notes" name="notes" defaultValue={customer?.notes ?? ""} />
-            </Field>
-            {error && <FieldError>{error}</FieldError>}
-          </FieldGroup>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Bekor
-            </Button>
-            <Button type="submit" disabled={mutation.isPending}>
-              {mutation.isPending ? "Saqlanmoqda…" : "Saqlash"}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+      <form
+        id="customer-form"
+        onSubmit={(e) => {
+          e.preventDefault()
+          submit(false)
+        }}
+      >
+        <FieldGroup>
+          <Field>
+            <FieldLabel htmlFor="c-name">Ism *</FieldLabel>
+            <Input key={formKey} id="c-name" name="name" className="h-11 sm:h-10" value={form.name} onChange={set("name")} autoFocus={isFinePointer()} />
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="c-phone">Telefon</FieldLabel>
+            <Input id="c-phone" name="phone" className="h-11 sm:h-10" inputMode="tel" placeholder="+998 90 123 45 67" value={form.phone} onChange={set("phone")} />
+            <FieldDescription>Format: +998 XX XXX XX XX</FieldDescription>
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="c-address">Manzil</FieldLabel>
+            <Input id="c-address" name="address" className="h-11 sm:h-10" value={form.address} onChange={set("address")} />
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="c-notes">Izoh</FieldLabel>
+            <Textarea id="c-notes" name="notes" value={form.notes} onChange={set("notes")} />
+          </Field>
+          {error && <FieldError>{error}</FieldError>}
+        </FieldGroup>
+      </form>
+    </FormSheet>
   )
 }

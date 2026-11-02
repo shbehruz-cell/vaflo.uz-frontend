@@ -5,13 +5,13 @@ import { useEffect, useMemo, useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Clock, Inbox, Monitor, Phone, Plus, Store as StoreIcon, Warehouse as WarehouseIcon } from "lucide-react"
 import { toast } from "sonner"
+import { FormSheet } from "@/components/app/form-sheet"
 import { PageHeader } from "@/components/app/page-header"
 import { EmptyState, ErrorState, LoadingRows, NoAccess } from "@/components/app/states"
 import { RegistersList, type RegisterRow } from "@/components/owner/registers-card"
 import { NativeSelect } from "@/components/reports/native-select"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -271,61 +271,65 @@ function AddDialog({ kind, onClose, warehouses }: { kind: "warehouse" | "registe
     onError: (e) => setError(e instanceof Error ? e.message : "Qo‘shib bo‘lmadi"),
   })
 
+  const dirty = !create.isPending && !!(name.trim() || codeTouched)
+  const formId = "add-" + kind + "-form"
+
   return (
-    <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{isWh ? "Ombor qo‘shish" : "Kassa qo‘shish"}</DialogTitle>
-          <DialogDescription>
-            {isWh ? "Mahsulot qoldig‘i har bir ombor bo‘yicha alohida yuritiladi." : "Kassa tanlangan ombordan sotadi. Kassir soni va xodimlarni keyin sozlash mumkin."}
-          </DialogDescription>
-        </DialogHeader>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault()
-            setError(null)
-            create.mutate()
-          }}
-        >
-          <FieldGroup>
+    <FormSheet
+      open
+      onOpenChange={(o) => !o && onClose()}
+      title={isWh ? "Ombor qo‘shish" : "Kassa qo‘shish"}
+      description={isWh ? "Mahsulot qoldig‘i har bir ombor bo‘yicha alohida yuritiladi." : "Kassa tanlangan ombordan sotadi. Kassir soni va xodimlarni keyin sozlash mumkin."}
+      dirty={dirty}
+      footer={
+        <>
+          <Button type="button" variant="outline" onClick={onClose}>
+            Bekor qilish
+          </Button>
+          <Button type="submit" form={formId} disabled={create.isPending || !name.trim() || !codeValue.trim() || (!isWh && !warehouseId)}>
+            {create.isPending && <Spinner />} {isWh ? "Ombor qo‘shish" : "Kassa qo‘shish"}
+          </Button>
+        </>
+      }
+    >
+      <form
+        id={formId}
+        onSubmit={(e) => {
+          e.preventDefault()
+          setError(null)
+          create.mutate()
+        }}
+      >
+        <FieldGroup>
+          <Field>
+            <FieldLabel htmlFor="add-name">Nomi</FieldLabel>
+            <Input id="add-name" className="h-11 sm:h-10" autoFocus={isFinePointer()} required maxLength={100} placeholder={isWh ? "Masalan: Asosiy ombor" : "Masalan: Kassa 2"} value={name} onChange={(e) => setName(e.target.value)} />
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="add-code">Kod</FieldLabel>
+            <Input
+              id="add-code"
+              className="h-11 font-mono uppercase sm:h-10"
+              required
+              maxLength={30}
+              value={codeValue}
+              onChange={(e) => {
+                setCodeTouched(true)
+                setCode(e.target.value.toUpperCase())
+              }}
+            />
+            <FieldDescription>Do‘kon ichida takrorlanmas qisqa kod. Nomdan avtomatik taklif qilinadi.</FieldDescription>
+          </Field>
+          {!isWh && (
             <Field>
-              <FieldLabel htmlFor="add-name">Nomi</FieldLabel>
-              <Input id="add-name" className="h-10" autoFocus={isFinePointer()} required maxLength={100} placeholder={isWh ? "Masalan: Asosiy ombor" : "Masalan: Kassa 2"} value={name} onChange={(e) => setName(e.target.value)} />
+              <FieldLabel htmlFor="add-wh">Ombor</FieldLabel>
+              <NativeSelect id="add-wh" className="h-11 sm:h-10" required value={warehouseId} onChange={(e) => setWarehouseId(e.target.value)} options={warehouses.map((w) => ({ value: w.id, label: w.name }))} />
             </Field>
-            <Field>
-              <FieldLabel htmlFor="add-code">Kod</FieldLabel>
-              <Input
-                id="add-code"
-                className="h-10 font-mono uppercase"
-                required
-                maxLength={30}
-                value={codeValue}
-                onChange={(e) => {
-                  setCodeTouched(true)
-                  setCode(e.target.value.toUpperCase())
-                }}
-              />
-              <FieldDescription>Do‘kon ichida takrorlanmas qisqa kod. Nomdan avtomatik taklif qilinadi.</FieldDescription>
-            </Field>
-            {!isWh && (
-              <Field>
-                <FieldLabel htmlFor="add-wh">Ombor</FieldLabel>
-                <NativeSelect id="add-wh" required value={warehouseId} onChange={(e) => setWarehouseId(e.target.value)} options={warehouses.map((w) => ({ value: w.id, label: w.name }))} />
-              </Field>
-            )}
-            {error && <FieldError>{error}</FieldError>}
-          </FieldGroup>
-          <DialogFooter className="mt-4">
-            <Button type="button" variant="outline" onClick={onClose}>
-              Bekor qilish
-            </Button>
-            <Button type="submit" disabled={create.isPending || !name.trim() || !codeValue.trim() || (!isWh && !warehouseId)}>
-              {create.isPending && <Spinner />} {isWh ? "Ombor qo‘shish" : "Kassa qo‘shish"}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+          )}
+          {error && <FieldError>{error}</FieldError>}
+        </FieldGroup>
+      </form>
+    </FormSheet>
   )
 }
 

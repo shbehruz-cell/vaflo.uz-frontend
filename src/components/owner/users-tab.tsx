@@ -1,11 +1,13 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { isFinePointer } from "@/lib/pointer"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Ban, KeyRound, Pencil, RefreshCw, ShieldCheck } from "lucide-react"
 import { toast } from "sonner"
 import { EmptyState, ErrorState, LoadingRows } from "@/components/app/states"
 import { PaginationBar } from "@/components/app/pagination-bar"
+import { FormSheet } from "@/components/app/form-sheet"
 import { AddButton } from "@/components/app/add-button"
 import { FilterBar, FilterField, type FilterChip } from "@/components/app/filter-bar"
 import { SearchInput } from "@/components/app/search-input"
@@ -69,8 +71,8 @@ function PasswordField({ value, onChange, label = "Parol" }: { value: string; on
     <Field>
       <FieldLabel htmlFor="pw">{label}</FieldLabel>
       <div className="flex gap-2">
-        <Input id="pw" value={value} onChange={(e) => onChange(e.target.value)} autoComplete="off" placeholder="Kamida 8 belgi" className="h-10 min-w-0 font-mono md:h-8" />
-        <Button type="button" variant="outline" className="h-10 shrink-0 md:h-8" onClick={() => onChange(generatePassword())}>
+        <Input id="pw" value={value} onChange={(e) => onChange(e.target.value)} autoComplete="off" placeholder="Kamida 8 belgi" className="h-11 min-w-0 font-mono sm:h-10" />
+        <Button type="button" variant="outline" className="h-11 shrink-0 sm:h-10" onClick={() => onChange(generatePassword())}>
           <RefreshCw /> Yaratish
         </Button>
       </div>
@@ -257,106 +259,112 @@ export function UsersTab() {
       )}
 
       {/* Qo‘shish */}
-      <Dialog open={dialog?.type === "create"} onOpenChange={(o) => !o && close()}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Xodim qo‘shish</DialogTitle>
-            <DialogDescription>Parolni xodimga o‘zingiz yetkazing — keyin u buni o‘zgartirishi mumkin.</DialogDescription>
-          </DialogHeader>
-          <form
-            className="space-y-4"
-            onSubmit={(e) => {
-              e.preventDefault()
-              setError(null)
-              create.mutate()
-            }}
-          >
-            <FieldGroup>
-              <Field>
-                <FieldLabel htmlFor="u-name">Ism</FieldLabel>
-                <Input id="u-name" required minLength={2} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="u-login">Login (email yoki telefon)</FieldLabel>
-                <Input id="u-login" required minLength={3} value={form.login} onChange={(e) => setForm({ ...form, login: e.target.value })} autoComplete="off" />
-              </Field>
-              <PasswordField value={form.password} onChange={(v) => setForm({ ...form, password: v })} />
-              <Field>
-                <FieldLabel htmlFor="u-role">Rol</FieldLabel>
-                <NativeSelect id="u-role" required value={form.roleId} onChange={(e) => setForm({ ...form, roleId: e.target.value })} options={[{ value: "", label: "Rolni tanlang" }, ...assignable.map((r) => ({ value: r.id, label: r.name }))]} />
-              </Field>
-              {error && <FieldError>{error}</FieldError>}
-            </FieldGroup>
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={close}>
-                Bekor qilish
-              </Button>
-              <Button type="submit" disabled={create.isPending || form.password.length < 8 || !form.roleId}>
-                {create.isPending && <Spinner />} Qo‘shish
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <FormSheet
+        open={dialog?.type === "create"}
+        onOpenChange={(o) => !o && close()}
+        title="Xodim qo‘shish"
+        description="Parolni xodimga o‘zingiz yetkazing — keyin u buni o‘zgartirishi mumkin."
+        dirty={dialog?.type === "create" && !create.isPending && !!(form.name || form.login || form.roleId)}
+        footer={
+          <>
+            <Button type="button" variant="outline" onClick={close}>
+              Bekor qilish
+            </Button>
+            <Button type="submit" form="user-create-form" disabled={create.isPending || form.password.length < 8 || !form.roleId}>
+              {create.isPending && <Spinner />} Qo‘shish
+            </Button>
+          </>
+        }
+      >
+        <form
+          id="user-create-form"
+          onSubmit={(e) => {
+            e.preventDefault()
+            setError(null)
+            create.mutate()
+          }}
+        >
+          <FieldGroup>
+            <Field>
+              <FieldLabel htmlFor="u-name">Ism</FieldLabel>
+              <Input id="u-name" className="h-11 sm:h-10" required minLength={2} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} autoFocus={isFinePointer()} />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="u-login">Login (email yoki telefon)</FieldLabel>
+              <Input id="u-login" className="h-11 sm:h-10" required minLength={3} value={form.login} onChange={(e) => setForm({ ...form, login: e.target.value })} autoComplete="off" />
+            </Field>
+            <PasswordField value={form.password} onChange={(v) => setForm({ ...form, password: v })} />
+            <Field>
+              <FieldLabel htmlFor="u-role">Rol</FieldLabel>
+              <NativeSelect id="u-role" className="h-11 sm:h-10" required value={form.roleId} onChange={(e) => setForm({ ...form, roleId: e.target.value })} options={[{ value: "", label: "Rolni tanlang" }, ...assignable.map((r) => ({ value: r.id, label: r.name }))]} />
+            </Field>
+            {error && <FieldError>{error}</FieldError>}
+          </FieldGroup>
+        </form>
+      </FormSheet>
 
       {/* Tahrirlash */}
-      <Dialog open={dialog?.type === "edit"} onOpenChange={(o) => !o && close()}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Xodimni tahrirlash</DialogTitle>
-            <DialogDescription>{target?.login}</DialogDescription>
-          </DialogHeader>
-          <form
-            className="space-y-4"
-            onSubmit={(e) => {
-              e.preventDefault()
-              if (!target) return
-              setError(null)
-              update.mutate({ id: target.id, body: { name: form.name.trim(), roleId: form.roleId, status: form.status }, msg: "Xodim yangilandi" })
-            }}
-          >
-            <FieldGroup>
-              <Field>
-                <FieldLabel htmlFor="e-name">Ism</FieldLabel>
-                <Input id="e-name" required minLength={2} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="e-role">Rol</FieldLabel>
-                <NativeSelect
-                  id="e-role"
-                  disabled={!!target && locked(target)}
-                  value={form.roleId}
-                  onChange={(e) => setForm({ ...form, roleId: e.target.value })}
-                  options={assignable.map((r) => ({ value: r.id, label: r.name }))}
-                />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="e-status">Holat</FieldLabel>
-                <NativeSelect
-                  id="e-status"
-                  disabled={!!target && locked(target)}
-                  value={form.status}
-                  onChange={(e) => setForm({ ...form, status: e.target.value as StaffUser["status"] })}
-                  options={[
-                    { value: "ACTIVE", label: "Faol" },
-                    { value: "BLOCKED", label: "Bloklangan" },
-                  ]}
-                />
-              </Field>
-              {target && locked(target) && <p className="text-xs text-muted-foreground">O‘zingizning rolingiz va holatingizni o‘zgartirib bo‘lmaydi.</p>}
-              {error && <FieldError>{error}</FieldError>}
-            </FieldGroup>
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={close}>
-                Bekor qilish
-              </Button>
-              <Button type="submit" disabled={update.isPending}>
-                {update.isPending && <Spinner />} Saqlash
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <FormSheet
+        open={dialog?.type === "edit"}
+        onOpenChange={(o) => !o && close()}
+        title="Xodimni tahrirlash"
+        description={target?.login}
+        dirty={dialog?.type === "edit" && !update.isPending && !!target && (form.name !== target.name || form.roleId !== target.roleId || form.status !== target.status)}
+        footer={
+          <>
+            <Button type="button" variant="outline" onClick={close}>
+              Bekor qilish
+            </Button>
+            <Button type="submit" form="user-edit-form" disabled={update.isPending}>
+              {update.isPending && <Spinner />} Saqlash
+            </Button>
+          </>
+        }
+      >
+        <form
+          id="user-edit-form"
+          onSubmit={(e) => {
+            e.preventDefault()
+            if (!target) return
+            setError(null)
+            update.mutate({ id: target.id, body: { name: form.name.trim(), roleId: form.roleId, status: form.status }, msg: "Xodim yangilandi" })
+          }}
+        >
+          <FieldGroup>
+            <Field>
+              <FieldLabel htmlFor="e-name">Ism</FieldLabel>
+              <Input id="e-name" className="h-11 sm:h-10" required minLength={2} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} autoFocus={isFinePointer()} />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="e-role">Rol</FieldLabel>
+              <NativeSelect
+                id="e-role"
+                className="h-11 sm:h-10"
+                disabled={!!target && locked(target)}
+                value={form.roleId}
+                onChange={(e) => setForm({ ...form, roleId: e.target.value })}
+                options={assignable.map((r) => ({ value: r.id, label: r.name }))}
+              />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="e-status">Holat</FieldLabel>
+              <NativeSelect
+                id="e-status"
+                className="h-11 sm:h-10"
+                disabled={!!target && locked(target)}
+                value={form.status}
+                onChange={(e) => setForm({ ...form, status: e.target.value as StaffUser["status"] })}
+                options={[
+                  { value: "ACTIVE", label: "Faol" },
+                  { value: "BLOCKED", label: "Bloklangan" },
+                ]}
+              />
+            </Field>
+            {target && locked(target) && <p className="text-xs text-muted-foreground">O‘zingizning rolingiz va holatingizni o‘zgartirib bo‘lmaydi.</p>}
+            {error && <FieldError>{error}</FieldError>}
+          </FieldGroup>
+        </form>
+      </FormSheet>
 
       {/* Parolni tiklash */}
       <Dialog open={dialog?.type === "reset"} onOpenChange={(o) => !o && close()}>

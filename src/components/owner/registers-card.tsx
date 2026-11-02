@@ -4,11 +4,11 @@ import { useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Monitor, Settings2, Users } from "lucide-react"
 import { toast } from "sonner"
+import { FormSheet } from "@/components/app/form-sheet"
 import { EmptyState, ErrorState, LoadingRows } from "@/components/app/states"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
@@ -140,83 +140,92 @@ function RegisterDialog({ register, onClose }: { register: RegisterRow; onClose:
       return next
     })
 
+  const initialSel = register.assignedUsers.map((u) => u.id)
+  const dirty =
+    !save.isPending &&
+    (name !== register.name ||
+      max !== String(register.maxCashiers) ||
+      selected.size !== initialSel.length ||
+      initialSel.some((id) => !selected.has(id)))
+
   return (
-    <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Kassani sozlash</DialogTitle>
-          <DialogDescription>
-            Kod: {register.code}. Hozir smenada: {register.openCount} ta kassir.
-          </DialogDescription>
-        </DialogHeader>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault()
-            setError(null)
-            save.mutate()
-          }}
-        >
-          <FieldGroup>
-            <Field>
-              <FieldLabel htmlFor="reg-name">Nomi</FieldLabel>
-              <Input id="reg-name" className="h-10" required maxLength={100} value={name} onChange={(e) => setName(e.target.value)} />
-            </Field>
+    <FormSheet
+      open
+      onOpenChange={(o) => !o && onClose()}
+      title="Kassani sozlash"
+      description={`Kod: ${register.code}. Hozir smenada: ${register.openCount} ta kassir.`}
+      dirty={dirty}
+      footer={
+        <>
+          <Button type="button" variant="outline" onClick={onClose}>
+            Bekor qilish
+          </Button>
+          <Button type="submit" form="register-form" disabled={save.isPending || !name.trim() || maxInvalid}>
+            {save.isPending && <Spinner />} Saqlash
+          </Button>
+        </>
+      }
+    >
+      <form
+        id="register-form"
+        onSubmit={(e) => {
+          e.preventDefault()
+          setError(null)
+          save.mutate()
+        }}
+      >
+        <FieldGroup>
+          <Field>
+            <FieldLabel htmlFor="reg-name">Nomi</FieldLabel>
+            <Input id="reg-name" className="h-11 sm:h-10" required maxLength={100} value={name} onChange={(e) => setName(e.target.value)} />
+          </Field>
 
-            <Field data-invalid={maxInvalid || undefined}>
-              <FieldLabel htmlFor="reg-max">Bir vaqtda nechta kassir ishlay oladi</FieldLabel>
-              <Input
-                id="reg-max"
-                type="number"
-                inputMode="numeric"
-                min={1}
-                max={20}
-                value={max}
-                onChange={(e) => setMax(e.target.value)}
-                aria-invalid={maxInvalid || undefined}
-                className="h-10 w-28"
-              />
-              <FieldDescription>1 dan 20 gacha. Har bir kassir o‘z smenasini alohida ochadi va yopadi.</FieldDescription>
-            </Field>
+          <Field data-invalid={maxInvalid || undefined}>
+            <FieldLabel htmlFor="reg-max">Bir vaqtda nechta kassir ishlay oladi</FieldLabel>
+            <Input
+              id="reg-max"
+              type="number"
+              inputMode="numeric"
+              min={1}
+              max={20}
+              value={max}
+              onChange={(e) => setMax(e.target.value)}
+              aria-invalid={maxInvalid || undefined}
+              className="h-11 w-28 sm:h-10"
+            />
+            <FieldDescription>1 dan 20 gacha. Har bir kassir o‘z smenasini alohida ochadi va yopadi.</FieldDescription>
+          </Field>
 
-            <Field>
-              <FieldLabel className="flex items-center gap-2">
-                <Users className="size-4" /> Biriktirilgan xodimlar
-              </FieldLabel>
-              <FieldDescription>
-                Hech kim tanlanmasa, kassada istalgan kassir ishlay oladi. Tanlansa, faqat shu xodimlar.
-              </FieldDescription>
-              {staff.isLoading ? (
-                <LoadingRows rows={3} />
-              ) : staff.isError ? (
-                <ErrorState error={staff.error} onRetry={() => void staff.refetch()} />
-              ) : (
-                <div className="max-h-56 divide-y overflow-y-auto rounded-lg border bg-card">
-                  {staff.data?.map((u) => (
-                    <label key={u.id} className="flex min-h-11 cursor-pointer items-center gap-3 px-3 py-2.5 hover:bg-muted/50">
-                      <Checkbox checked={selected.has(u.id)} onCheckedChange={(v) => toggle(u.id, v === true)} />
-                      <span className="min-w-0 flex-1 truncate text-sm">{u.name}</span>
-                      <span className="text-xs text-muted-foreground">{u.role.name}</span>
-                    </label>
-                  ))}
-                </div>
-              )}
-              <div className="text-xs text-muted-foreground">
-                {selected.size ? `${selected.size} ta xodim tanlandi` : "Barcha kassirlar ishlay oladi"}
+          <Field>
+            <FieldLabel className="flex items-center gap-2">
+              <Users className="size-4" /> Biriktirilgan xodimlar
+            </FieldLabel>
+            <FieldDescription>
+              Hech kim tanlanmasa, kassada istalgan kassir ishlay oladi. Tanlansa, faqat shu xodimlar.
+            </FieldDescription>
+            {staff.isLoading ? (
+              <LoadingRows rows={3} />
+            ) : staff.isError ? (
+              <ErrorState error={staff.error} onRetry={() => void staff.refetch()} />
+            ) : (
+              <div className="divide-y rounded-lg border bg-card">
+                {staff.data?.map((u) => (
+                  <label key={u.id} className="flex min-h-12 cursor-pointer items-center gap-3 px-3 py-2.5 hover:bg-muted/50 sm:min-h-11">
+                    <Checkbox checked={selected.has(u.id)} onCheckedChange={(v) => toggle(u.id, v === true)} />
+                    <span className="min-w-0 flex-1 truncate text-sm">{u.name}</span>
+                    <span className="text-xs text-muted-foreground">{u.role.name}</span>
+                  </label>
+                ))}
               </div>
-            </Field>
+            )}
+            <div className="text-xs text-muted-foreground">
+              {selected.size ? `${selected.size} ta xodim tanlandi` : "Barcha kassirlar ishlay oladi"}
+            </div>
+          </Field>
 
-            {error && <FieldError>{error}</FieldError>}
-          </FieldGroup>
-          <DialogFooter className="mt-4">
-            <Button type="button" variant="outline" onClick={onClose}>
-              Bekor qilish
-            </Button>
-            <Button type="submit" disabled={save.isPending || !name.trim() || maxInvalid}>
-              {save.isPending && <Spinner />} Saqlash
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+          {error && <FieldError>{error}</FieldError>}
+        </FieldGroup>
+      </form>
+    </FormSheet>
   )
 }
