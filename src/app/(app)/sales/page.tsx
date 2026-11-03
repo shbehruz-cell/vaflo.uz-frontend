@@ -6,8 +6,9 @@ import { useRouter } from "next/navigation"
 import { useQuery } from "@tanstack/react-query"
 import { Banknote, ChevronRight, CreditCard, ReceiptText, Shuffle, type LucideIcon } from "lucide-react"
 import { Input } from "@/components/ui/input"
-import { DateRangeFields, FilterBar, FilterField, type FilterChip } from "@/components/app/filter-bar"
+import { FilterBar, FilterField, type FilterChip } from "@/components/app/filter-bar"
 import { SearchInput } from "@/components/app/search-input"
+import { PeriodPicker } from "@/components/app/period-picker"
 import { EmptyState, ErrorState, LoadingRows } from "@/components/app/states"
 import { PaginationBar } from "@/components/app/pagination-bar"
 import { CustomerFilter } from "@/components/sales/customer-filter"
@@ -111,9 +112,7 @@ function SalesContent() {
   ]
   // Sana chiplari alohida ko‘rinadi — filtr panelidagi hisobga faqat qolgan filtrlar kiradi
   const customRange = (!!from || !!to) && !presets.some((p) => p.f === from && p.t === to)
-  const fmtShort = (d: string) => (d ? `${d.slice(8, 10)}.${d.slice(5, 7)}` : "…")
   const chips: FilterChip[] = []
-  if (customRange) chips.push({ key: "range", label: `Sana: ${fmtShort(from)}–${fmtShort(to)}`, onRemove: () => url.set({ from: null, to: null, page: 1 }) })
   if (barcode.trim() || url.get("barcode"))
     chips.push({
       key: "barcode",
@@ -142,25 +141,22 @@ function SalesContent() {
         </div>
       </div>
 
-      <div className="scroll-row -mx-4 gap-2 px-4 sm:mx-0 sm:px-0" role="group" aria-label="Davr">
-        {presets.map((p) => {
-          const active = from === p.f && to === p.t
-          return (
-            <button
-              key={p.label}
-              type="button"
-              aria-pressed={active}
-              onClick={() => url.set({ from: p.f, to: p.t, page: 1 })}
-              className={cn(
-                "h-9 shrink-0 rounded-full border px-3.5 text-sm font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                active ? "border-primary bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {p.label}
-            </button>
-          )
-        })}
-      </div>
+      <PeriodPicker
+        options={presets.map((p) => ({ value: p.label, label: p.label }))}
+        value={presets.find((p) => p.f === from && p.t === to)?.label ?? ""}
+        onChange={(v) => {
+          const p = presets.find((x) => x.label === v)
+          if (p) url.set({ from: p.f, to: p.t, page: 1 })
+        }}
+        custom={{
+          active: customRange,
+          from,
+          to,
+          invalid: !!from && !!to && from > to,
+          onFrom: (v) => url.set({ from: v, page: 1 }),
+          onTo: (v) => url.set({ to: v, page: 1 }),
+        }}
+      />
 
       <FilterBar
         search={<SearchInput value={receipt} onChange={setReceipt} placeholder="Chek raqami bo‘yicha qidirish" aria-label="Chek raqami" inputMode="numeric" />}
@@ -174,9 +170,6 @@ function SalesContent() {
       >
         <FilterField label="Mahsulot shtrix-kodi">
           <Input className="h-10 w-full" placeholder="Shtrix-kod" value={barcode} onChange={(e) => setBarcode(e.target.value)} />
-        </FilterField>
-        <FilterField label="Sana oralig‘i" group>
-          <DateRangeFields from={from} to={to} onFrom={(v) => url.set({ from: v, page: 1 })} onTo={(v) => url.set({ to: v, page: 1 })} />
         </FilterField>
         <FilterField label="Xaridor" group>
           <CustomerFilter customerId={customerId} onChange={(id) => url.set({ customerId: id, page: 1 })} />
