@@ -53,7 +53,8 @@ export function PeriodPicker({
   const currentLabel = customActive ? rangeLabel : (options.find((o) => o.value === value)?.label ?? "Davr")
 
   const customFields = custom && (
-    <div className="space-y-1.5">
+    // DateRangeFields kompyuterda yorliqni yonida (md:flex) chizadi — tor oynada sig‘masligi uchun doim ustma-ust
+    <div className="space-y-1.5 [&_.md\:flex]:grid">
       <DateRangeFields from={custom.from} to={custom.to} onFrom={custom.onFrom} onTo={custom.onTo} />
       {custom.invalid && <p className="text-xs text-destructive">Boshlanish sanasi tugash sanasidan keyin bo‘lmasin</p>}
     </div>
@@ -154,7 +155,7 @@ export function PeriodPicker({
             <CalendarDays />
             {customActive ? rangeLabel : "Boshqa"}
           </PopoverTrigger>
-          <PopoverContent align="start" className="w-80">
+          <PopoverContent align="start" className="w-[min(22rem,calc(100vw-2rem))]">
             <p className="mb-3 text-sm font-medium">Sana oralig‘i</p>
             {customFields}
           </PopoverContent>
