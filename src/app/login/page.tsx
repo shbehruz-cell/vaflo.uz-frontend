@@ -77,14 +77,17 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-svh flex-col bg-background">
-      <header className="flex h-16 shrink-0 items-center justify-between px-4 sm:px-6">
-        <Logo />
+      <header className="flex h-16 shrink-0 items-center justify-end px-4 sm:px-6">
         <ThemeToggle />
       </header>
 
       {/* Telefonda forma yuqoriroqda — ekran klaviaturasi uni yopmasin; kattaroq ekranda o‘rtada */}
       <main className="flex flex-1 justify-center px-4 pt-6 pb-10 sm:items-center sm:pt-0 sm:pb-24">
         <div className="w-full max-w-[400px]">
+          {/* Belgi + nom birga: yangi brend uchun nom tanilishiga yordam beradi; forma ustida, markazda */}
+          <div className="mb-6 flex justify-center">
+            <Logo className="gap-2.5 [&_img]:h-8 [&>span]:text-xl" />
+          </div>
           <div className="rounded-2xl border bg-card p-6 sm:p-8">
             <h1 className="text-2xl font-semibold tracking-tight">Tizimga kirish</h1>
             <p className="mt-1.5 text-sm text-muted-foreground">Do‘koningiz hisobiga login va parol bilan kiring.</p>
