@@ -398,7 +398,7 @@ function Dashboard() {
       <MobileShortcuts />
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <Panel className="lg:col-span-2">
+        <Panel className="flex flex-col lg:col-span-2">
           <PanelHeader
             icon={<BarChart3 />}
             title={singleDay ? "Sotuv dinamikasi · oxirgi 7 kun" : `Sotuv dinamikasi${query.preset === "custom" ? " · tanlangan davr" : periodLabel ? ` · ${periodLabel.toLowerCase()}` : ""}`}
@@ -425,13 +425,16 @@ function Dashboard() {
               </>
             }
           />
-          {chart.isError ? (
-            <ErrorState error={chart.error} onRetry={() => void chart.refetch()} />
-          ) : chart.isLoading ? (
-            <Skeleton className="h-64 w-full" />
-          ) : (
-            <SalesChart data={series} />
-          )}
+          {/* Grafik panelning qolgan balandligini to‘ldiradi (o‘ng ustun baland bo‘lsa ham bo‘sh joy qolmaydi) */}
+          <div className="flex min-h-64 flex-1 flex-col">
+            {chart.isError ? (
+              <ErrorState error={chart.error} onRetry={() => void chart.refetch()} />
+            ) : chart.isLoading ? (
+              <Skeleton className="min-h-64 w-full flex-1" />
+            ) : (
+              <SalesChart data={series} className="aspect-auto h-full min-h-64 w-full flex-1" />
+            )}
+          </div>
         </Panel>
 
         <div className="space-y-4">
