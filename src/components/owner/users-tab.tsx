@@ -9,7 +9,7 @@ import { EmptyState, ErrorState, LoadingRows } from "@/components/app/states"
 import { PaginationBar } from "@/components/app/pagination-bar"
 import { FormSheet } from "@/components/app/form-sheet"
 import { AddButton } from "@/components/app/add-button"
-import { FilterBar, FilterField, type FilterChip } from "@/components/app/filter-bar"
+import { InlineSelect } from "@/components/app/inline-select"
 import { SearchInput } from "@/components/app/search-input"
 import { NativeSelect } from "@/components/reports/native-select"
 import {
@@ -167,32 +167,26 @@ export function UsersTab() {
 
   const target = dialog && dialog.type !== "create" ? dialog.user : null
 
-  const chips: FilterChip[] = status
-    ? [{ key: "status", label: `Holat: ${status === "ACTIVE" ? "Faol" : "Bloklangan"}`, onRemove: () => set({ status: "", page: "" }) }]
-    : []
-
   return (
     <div className="space-y-4 pb-16 md:pb-0">
-      <FilterBar
-        search={<SearchInput value={search} onChange={setSearch} placeholder="Ism yoki login" aria-label="Qidirish" />}
-        activeCount={chips.length}
-        chips={chips}
-        onReset={() => set({ status: "", page: "" })}
-        actions={<AddButton label="Xodim qo‘shish" onClick={() => open({ type: "create" })} />}
-      >
-        <FilterField label="Holat">
-          <NativeSelect
-            className="w-full"
-            value={status}
-            onChange={(e) => set({ status: e.target.value, page: "" })}
-            options={[
-              { value: "", label: "Barcha holatlar" },
-              { value: "ACTIVE", label: "Faol" },
-              { value: "BLOCKED", label: "Bloklangan" },
-            ]}
-          />
-        </FilterField>
-      </FilterBar>
+      <div className="flex flex-wrap items-center gap-2">
+        <SearchInput className="min-w-0 flex-1 sm:w-64 sm:flex-none" value={search} onChange={setSearch} placeholder="Ism yoki login" aria-label="Qidirish" />
+        <InlineSelect
+          className="max-w-none sm:max-w-40"
+          ariaLabel="Holat"
+          icon={<CircleDot />}
+          value={status}
+          onChange={(v) => set({ status: v, page: "" })}
+          options={[
+            { value: "", label: "Barcha holatlar" },
+            { value: "ACTIVE", label: "Faol" },
+            { value: "BLOCKED", label: "Bloklangan" },
+          ]}
+        />
+        <div className="ml-auto">
+          <AddButton label="Xodim qo‘shish" onClick={() => open({ type: "create" })} />
+        </div>
+      </div>
 
       {users.isLoading ? (
         <LoadingRows />

@@ -18,13 +18,24 @@ export interface Me {
   login: string
   role: { key: string; name: string }
   storeId: string
+  twoFactorEnabled?: boolean
   permissions: PermissionCode[]
 }
+
+/** Login natijasi: to‘g‘ridan-to‘g‘ri kirdi yoki emailga kelgan kod kerak (2 bosqichli kirish). */
+export type LoginResult =
+  | { twoFactorRequired: false; user: Me }
+  | { twoFactorRequired: true; challengeId: string; email: string }
 
 interface AuthState {
   user: Me | null
   status: "loading" | "authenticated" | "anonymous"
-  login: (login: string, password: string) => Promise<Me>
+  login: (login: string, password: string) => Promise<LoginResult>
+  completeTwoFactor: (challengeId: string, code: string) => Promise<Me>
+  /** Email tasdiqlangach do‘kon va Owner hisobini yaratadi hamda darhol kiritadi. */
+  completeSignup: (signupToken: string, data: { name: string; storeName: string; password: string }) => Promise<Me>
+  /** Profilni qayta o‘qiydi (masalan 2 bosqichli kirish yoqilgach). */
+  refreshUser: () => Promise<void>
   logout: () => Promise<void>
   /** Ro‘yxatdagi permissionlardan KAMIDA BITTASI bo‘lsa true. */
   can: (...codes: PermissionCode[]) => boolean
@@ -57,12 +68,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .catch(reset)
   }, [reset])
 
-  const login = useCallback(async (login: string, password: string) => {
-    const res = await api.post<{ accessToken: string; user: Me }>("/auth/login", { login, password })
+  const login = useCallback(async (login: string, password: string): Promise<LoginResult> => {
+    const res = await api.post<{ accessToken?: string; user?: Me; twoFactorRequired?: boolean; challengeId?: string; email?: string }>("/auth/login", { login, password })
+    if (res.twoFactorRequired && res.challengeId) return { twoFactorRequired: true, challengeId: res.challengeId, email: res.email ?? "" }
+    setAccessToken(res.accessToken ?? null)
+    setUser(res.user ?? null)
+    setStatus("authenticated")
+    return { twoFactorRequired: false, user: res.user as Me }
+  }, [])
+
+  const completeTwoFactor = useCallback(async (challengeId: string, code: string) => {
+    const res = await api.post<{ accessToken: string; user: Me }>("/auth/2fa/verify", { challengeId, code })
     setAccessToken(res.accessToken)
     setUser(res.user)
     setStatus("authenticated")
     return res.user
+  }, [])
+
+  const completeSignup = useCallback(async (signupToken: string, data: { name: string; storeName: string; password: string }) => {
+    const res = await api.post<{ accessToken: string; user: Me }>("/auth/signup/complete", { signupToken, ...data })
+    setAccessToken(res.accessToken)
+    setUser(res.user)
+    setStatus("authenticated")
+    return res.user
+  }, [])
+
+  const refreshUser = useCallback(async () => {
+    setUser(await api.get<Me>("/auth/me"))
   }, [])
 
   const logout = useCallback(async () => {
@@ -76,11 +108,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       user,
       status,
       login,
+      completeTwoFactor,
+      completeSignup,
+      refreshUser,
       logout,
       can: (...codes) => codes.some((c) => perms.has(c)),
       isOwner: user?.role.key === "owner",
     }
-  }, [user, status, login, logout])
+  }, [user, status, login, completeTwoFactor, completeSignup, refreshUser, logout])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

@@ -149,15 +149,15 @@ export function RolesTab() {
           <Lock className="size-4 shrink-0" /> Rollarni faqat owner o‘zgartira oladi. Siz faqat ko‘rishingiz mumkin.
         </p>
       )}
-      <div className="grid gap-4 lg:grid-cols-[16rem_1fr]">
-        <div className="scroll-row -mx-4 gap-2 px-4 lg:mx-0 lg:block lg:space-y-2 lg:px-0">
+      <div className="grid gap-4 md:grid-cols-[16rem_1fr] md:items-start">
+        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 md:sticky md:top-20 md:mx-0 md:flex-col md:self-start md:overflow-visible md:px-0">
           {list.map((r) => (
             <button
               key={r.id}
               type="button"
               onClick={() => setSelectedId(r.id)}
               className={cn(
-                "flex min-h-11 shrink-0 items-center max-lg:rounded-full max-lg:py-1.5 lg:w-full justify-between gap-2 rounded-lg border bg-card px-3 py-2.5 text-left text-sm transition-colors hover:bg-muted",
+                "flex min-h-11 shrink-0 items-center max-md:rounded-full max-md:py-1.5 md:w-full justify-between gap-2 rounded-lg border bg-card px-3 py-2.5 text-left text-sm transition-colors hover:bg-muted",
                 r.id === role?.id && "border-primary bg-primary/5",
               )}
             >
@@ -170,7 +170,7 @@ export function RolesTab() {
           {isOwner && (
             <Button
               variant="outline"
-              className="h-10 shrink-0 max-lg:rounded-full max-sm:w-10 max-sm:px-0 lg:w-full"
+              className="h-10 shrink-0 max-md:rounded-full max-sm:w-10 max-sm:px-0 md:w-full"
               aria-label="Yangi rol"
               onClick={() => { setCreateError(null); setCreateOpen(true) }}
             >

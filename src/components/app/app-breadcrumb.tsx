@@ -4,6 +4,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { ChevronRight } from "lucide-react"
 import { NAV } from "@/lib/nav"
+import { useAuth } from "@/lib/auth"
 
 /** Qo‘shimcha sahifalar (menyuda yo‘q) — eng uzun mos prefiks olinadi. */
 const EXTRA: { href: string; label: string; group?: string }[] = [
@@ -18,6 +19,7 @@ const EXTRA: { href: string; label: string; group?: string }[] = [
  */
 export function AppBreadcrumb() {
   const pathname = usePathname()
+  const { can, isOwner } = useAuth()
 
   const items = NAV.flatMap((g) => g.items.map((i) => ({ href: i.href, label: i.label, group: g.label as string | undefined })))
   const all = [...items, ...EXTRA]
@@ -32,7 +34,10 @@ export function AppBreadcrumb() {
     : undefined
 
   const crumbs: { label: string; href?: string }[] = []
-  if (match.group) crumbs.push({ label: match.group })
+  if (match.group) {
+    const first = NAV.find((g) => g.label === match.group)?.items.find((i) => (i.ownerOnly ? isOwner : i.permissions.length === 0 || can(...i.permissions)))
+    crumbs.push({ label: match.group, href: first?.href })
+  }
   if (extraParent) crumbs.push({ label: extraParent.label, href: extraParent.href })
   crumbs.push({ label: match.label, href: isDetail ? match.href : undefined })
   if (isDetail) crumbs.push({ label: "Tafsilot" })

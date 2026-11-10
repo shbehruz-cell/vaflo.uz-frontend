@@ -12,7 +12,7 @@ export function ThemeToggle({ className }: { className?: string }) {
     <Button
       variant="ghost"
       size="icon"
-      className={cn("size-10", className)}
+      className={cn("size-10 pointer-coarse:size-11", className)}
       aria-label="Tungi va kunduzgi rejimni almashtirish"
       title="Tungi / kunduzgi rejim"
       onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
