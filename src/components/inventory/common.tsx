@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { StatusChip } from "@/components/app/status-chip"
 import { useQuery } from "@tanstack/react-query"
 import { Check, ChevronsUpDown } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
@@ -75,12 +76,12 @@ export const WARN_BADGE = "border-transparent bg-amber-500/15 text-amber-700 dar
 
 /** Ro‘yxat sahifalari uchun umumiy uslublar (mahsulotlar, harakatlar, sotuvlar, xaridorlar). */
 export const TOOLBAR_CARD = "rounded-2xl border bg-card p-3"
-export const TABLE_CARD = "overflow-hidden rounded-2xl border bg-card"
-export const THEAD = "bg-muted/50 [&_th]:h-10 [&_th]:text-xs [&_th]:font-medium [&_th]:text-muted-foreground [&_tr]:hover:bg-transparent"
+export const TABLE_CARD = "overflow-hidden rounded-xl border bg-card"
+export const THEAD = "bg-muted/40 [&_th]:h-9 [&_th]:text-xs [&_th]:font-medium [&_th]:text-muted-foreground [&_th_svg]:size-3.5 [&_th_svg]:opacity-70 [&_tr]:hover:bg-transparent"
 export const TROW = "h-11"
 
 export function ActiveBadge({ active }: { active: boolean }) {
-  return <Badge variant={active ? "secondary" : "outline"}>{active ? "Faol" : "Arxiv"}</Badge>
+  return <StatusChip tone={active ? "success" : "neutral"}>{active ? "Faol" : "Arxiv"}</StatusChip>
 }
 
 export function MovementBadge({ type }: { type: string }) {

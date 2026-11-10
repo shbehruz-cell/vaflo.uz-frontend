@@ -3,14 +3,16 @@
 import { use } from "react"
 import Link from "next/link"
 import { useQuery } from "@tanstack/react-query"
-import { ArrowLeft } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
+import { ArrowLeft, Banknote, CalendarClock, FileText, Timer, Wallet } from "lucide-react"
+import { ColumnHead } from "@/components/app/column-head"
+import { StatusChip } from "@/components/app/status-chip"
+import { TABLE_CARD, THEAD, TROW } from "@/components/inventory/common"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { PageHeader } from "@/components/app/page-header"
 import { EmptyState, ErrorState, LoadingRows } from "@/components/app/states"
 import type { ShiftDetail } from "@/components/pos/types"
-import { ShiftStats, ShiftStatusBadge } from "@/components/shifts/shift-summary"
+import { ShiftStats } from "@/components/shifts/shift-summary"
 import { api } from "@/lib/api"
 import { formatDateTime, formatMoney } from "@/lib/format"
 
@@ -25,9 +27,14 @@ export default function ShiftDetailPage({ params }: { params: Promise<{ id: stri
   return (
     <div className="space-y-6">
       <PageHeader
+        eyebrow={
+          <>
+            <Timer /> Smenalar
+          </>
+        }
         title={
           <span className="flex flex-wrap items-center gap-2">
-            Smena {shift && <ShiftStatusBadge status={shift.status} />}
+            Smena {shift && <StatusChip tone={shift.status === "OPEN" ? "success" : "neutral"}>{shift.status === "OPEN" ? "Ochiq" : "Yopilgan"}</StatusChip>}
           </span>
         }
         description={
@@ -60,7 +67,7 @@ export default function ShiftDetailPage({ params }: { params: Promise<{ id: stri
                   <li key={m.id} className="rounded-2xl border bg-card p-3">
                     <div className="flex items-center justify-between gap-2">
                       <span className="flex items-center gap-2">
-                        {m.type === "CASH_IN" ? <Badge variant="secondary">Kirim</Badge> : <Badge variant="outline">Chiqim</Badge>}
+                        {m.type === "CASH_IN" ? <StatusChip tone="success" icon={false}>Kirim</StatusChip> : <StatusChip tone="danger" icon={false}>Chiqim</StatusChip>}
                         <span className="text-xs text-muted-foreground">{formatDateTime(m.createdAt)}</span>
                       </span>
                       <span className="font-semibold tabular-nums">
@@ -72,22 +79,22 @@ export default function ShiftDetailPage({ params }: { params: Promise<{ id: stri
                   </li>
                 ))}
               </ul>
-              <div className="hidden overflow-hidden rounded-2xl border bg-card md:block">
+              <div className={`hidden md:block ${TABLE_CARD}`}>
                 <Table>
-                  <TableHeader className="bg-muted/50 text-xs font-medium text-muted-foreground">
+                  <TableHeader className={THEAD}>
                     <TableRow>
-                      <TableHead>Vaqt</TableHead>
-                      <TableHead>Turi</TableHead>
-                      <TableHead>Sabab</TableHead>
-                      <TableHead className="text-right">Summa</TableHead>
+                      <TableHead><ColumnHead icon={CalendarClock}>Vaqt</ColumnHead></TableHead>
+                      <TableHead><ColumnHead icon={Wallet}>Turi</ColumnHead></TableHead>
+                      <TableHead><ColumnHead icon={FileText}>Sabab</ColumnHead></TableHead>
+                      <TableHead className="text-right"><ColumnHead icon={Banknote}>Summa</ColumnHead></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {shift.cashMovements.map((m) => (
-                      <TableRow key={m.id}>
+                      <TableRow key={m.id} className={TROW}>
                         <TableCell className="whitespace-nowrap font-medium">{formatDateTime(m.createdAt)}</TableCell>
                         <TableCell>
-                          {m.type === "CASH_IN" ? <Badge variant="secondary">Kirim</Badge> : <Badge variant="outline">Chiqim</Badge>}
+                          {m.type === "CASH_IN" ? <StatusChip tone="success" icon={false}>Kirim</StatusChip> : <StatusChip tone="danger" icon={false}>Chiqim</StatusChip>}
                         </TableCell>
                         <TableCell className="max-w-64 truncate">{m.reason}</TableCell>
                         <TableCell className="text-right tabular-nums">

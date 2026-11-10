@@ -4,6 +4,7 @@ import { useEffect } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import Link from "next/link"
 import { ChevronLeft } from "lucide-react"
+import { AppBreadcrumb } from "@/components/app/app-breadcrumb"
 import { AppSidebar } from "@/components/app/app-sidebar"
 import { Logo } from "@/components/app/logo"
 import { MobileTabBar } from "@/components/app/mobile-tab-bar"
@@ -51,7 +52,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset className="min-w-0">
-        <header className="sticky top-0 z-30 flex print:hidden h-14 shrink-0 items-center gap-2 border-b bg-background/90 px-4 backdrop-blur">
+        <header className="sticky top-0 z-30 flex print:hidden h-14 shrink-0 items-center gap-2 border-b bg-background/90 px-4 backdrop-blur sm:px-6">
           {/* Desktopda menyu — sidebar. Mobilda bo‘limlar pastki paneldan va /menu sahifasidan ochiladi */}
           {back ? (
             <Link
@@ -66,6 +67,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <Logo />
             </Link>
           )}
+          <AppBreadcrumb />
           <div className="ml-auto flex items-center gap-1">
             <ThemeToggle />
           </div>

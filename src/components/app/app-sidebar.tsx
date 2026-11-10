@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { ChevronsUpDown, KeyRound, LogOut } from "lucide-react"
+import { ChevronRight, KeyRound, LogOut } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -67,7 +67,7 @@ export function AppSidebar() {
       <SidebarContent>
         {groups.map((g) => (
           <SidebarGroup key={g.label}>
-            <SidebarGroupLabel className="normal-case tracking-normal text-sidebar-foreground/60">{g.label}</SidebarGroupLabel>
+            <SidebarGroupLabel className="text-[11px] font-semibold tracking-wider text-sidebar-foreground/45 uppercase">{g.label}</SidebarGroupLabel>
             <SidebarMenu>
               {g.items.map((item) => (
                 <SidebarMenuItem key={item.href}>
@@ -75,6 +75,7 @@ export function AppSidebar() {
                     render={<Link href={item.href} onClick={() => setOpenMobile(false)} />}
                     isActive={pathname === item.href || pathname.startsWith(item.href + "/")}
                     tooltip={item.label}
+                    className="data-active:bg-sidebar-accent data-active:font-medium data-active:text-foreground data-active:[&_svg]:text-primary"
                   >
                     <item.icon />
                     <span>{item.label}</span>
@@ -90,7 +91,10 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <DropdownMenu>
-              <DropdownMenuTrigger render={<SidebarMenuButton size="lg" className="data-popup-open:bg-sidebar-accent" />}>
+              <DropdownMenuTrigger render={<SidebarMenuButton
+                    size="lg"
+                    className="rounded-xl border bg-sidebar p-2 data-popup-open:bg-sidebar-accent group-data-[collapsible=icon]:border-0"
+                  />}>
                 <Avatar className="size-8 rounded-lg">
                   <AvatarFallback className="rounded-lg bg-primary/10 text-primary">{initials}</AvatarFallback>
                 </Avatar>
@@ -98,7 +102,7 @@ export function AppSidebar() {
                   <span className="truncate font-medium">{user?.name}</span>
                   <span className="truncate text-xs text-muted-foreground">{user?.role.name}</span>
                 </span>
-                <ChevronsUpDown className="ml-auto size-4" />
+                <ChevronRight className="ml-auto size-4 text-muted-foreground" />
               </DropdownMenuTrigger>
               <DropdownMenuContent side="top" align="start" className="min-w-56">
                 <DropdownMenuGroup>

@@ -7,6 +7,8 @@ import { Clock, Inbox, Monitor, Phone, Plus, Store as StoreIcon, Warehouse as Wa
 import { toast } from "sonner"
 import { FormSheet } from "@/components/app/form-sheet"
 import { PageHeader } from "@/components/app/page-header"
+import { Panel, RingProgress } from "@/components/app/panel"
+import { ViewTabs } from "@/components/app/view-tabs"
 import { EmptyState, ErrorState, LoadingRows, NoAccess } from "@/components/app/states"
 import { RegistersList, type RegisterRow } from "@/components/owner/registers-card"
 import { NativeSelect } from "@/components/reports/native-select"
@@ -47,26 +49,6 @@ const FALLBACK_TZ = ["Asia/Tashkent", "Asia/Samarkand", "Asia/Almaty", "Europe/M
 function formatPhone(p: string) {
   const m = p.replace(/\D/g, "").match(/^998(\d{2})(\d{3})(\d{2})(\d{2})$/)
   return m ? `+998 ${m[1]} ${m[2]} ${m[3]} ${m[4]}` : p
-}
-
-/** Ko‘rinib turgan bo‘limni kuzatadi (chap menyuda belgilash uchun). */
-function useActiveSection(ids: string[]) {
-  const [active, setActive] = useState<string | null>(null)
-  const key = ids.join(",")
-  useEffect(() => {
-    const els = key.split(",").map((id) => document.getElementById(id)).filter((e): e is HTMLElement => !!e)
-    if (!els.length) return
-    const io = new IntersectionObserver(
-      (entries) => {
-        const top = entries.filter((e) => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0]
-        if (top) setActive(top.target.id)
-      },
-      { rootMargin: "-80px 0px -55% 0px" },
-    )
-    els.forEach((el) => io.observe(el))
-    return () => io.disconnect()
-  }, [key])
-  return active
 }
 
 /** "Asia/Tashkent" → "Tashkent (UTC+5)" */
@@ -126,48 +108,6 @@ function Section({
   )
 }
 
-/* ───────────────────────── Do‘kon kartasi ───────────────────────── */
-
-function StoreSummary({ store, warehouses, registers }: { store?: Store; warehouses?: Warehouse[]; registers?: RegisterRow[] }) {
-  const clock = useStoreClock(store?.timezone)
-  const onShift = registers?.reduce((n, r) => n + r.openCount, 0)
-  const stats = [
-    { label: "Omborlar", value: warehouses?.length },
-    { label: "Kassalar", value: registers?.length },
-    { label: "Hozir smenada", value: onShift, suffix: "kassir" },
-  ]
-
-  return (
-    <div className="overflow-hidden rounded-2xl border bg-card">
-      <div className="flex items-center gap-4 p-4 sm:p-5">
-        <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-primary text-xl font-semibold text-primary-foreground sm:size-14 sm:text-2xl">
-          {store ? store.name.trim().charAt(0).toUpperCase() : <StoreIcon className="size-6" />}
-        </span>
-        <div className="min-w-0 flex-1">
-          {store ? <div className="truncate text-xl font-semibold tracking-tight">{store.name}</div> : <Skeleton className="h-7 w-48" />}
-          <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-            <span className="inline-flex items-center gap-1.5">
-              <Clock className="size-3.5" aria-hidden="true" />
-              {store ? tzLabel(store.timezone) : "—"}
-            </span>
-            {clock && <span className="tabular-nums">Do‘konda hozir {clock}</span>}
-          </div>
-        </div>
-      </div>
-      <dl className="grid grid-cols-3 divide-x border-t bg-muted/30">
-        {stats.map((s) => (
-          <div key={s.label} className="min-w-0 px-3 py-3 sm:px-5">
-            <dt className="text-xs leading-tight text-muted-foreground">{s.label}</dt>
-            <dd className="mt-1 text-lg font-semibold tabular-nums">
-              {s.value ?? "—"}
-              {s.suffix && s.value != null && <span className="ml-1 text-xs font-normal text-muted-foreground">{s.suffix}</span>}
-            </dd>
-          </div>
-        ))}
-      </dl>
-    </div>
-  )
-}
 
 /* ───────────────────────── Do‘kon ma’lumotlari ───────────────────────── */
 
@@ -403,70 +343,113 @@ function useDemoRequests(enabled: boolean) {
   })
 }
 
+
+/* ───────────────────────── Foydalanish (haqiqiy sonlar) ───────────────────────── */
+
+function UsageRow({ count, label, loading }: { count?: number; label: string; loading?: boolean }) {
+  return (
+    <li className="flex min-h-12 items-center gap-3 py-2">
+      <RingProgress value={count && count > 0 ? 1 : 0} max={1} size={24} />
+      <span className="min-w-0 flex-1 truncate font-medium">{label}</span>
+      {loading ? <Skeleton className="h-5 w-10" /> : <span className="tabular-nums">{count ?? "—"}</span>}
+    </li>
+  )
+}
+
+function UsagePanel({
+  store,
+  warehouses,
+  registers,
+  staffTotal,
+  showStaff,
+}: {
+  store?: Store
+  warehouses?: Warehouse[]
+  registers?: RegisterRow[]
+  staffTotal?: number
+  showStaff: boolean
+}) {
+  const clock = useStoreClock(store?.timezone)
+  const onShift = registers?.reduce((n, r) => n + r.openCount, 0)
+  return (
+    <Panel className="grid gap-5 md:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] md:gap-10">
+      <div className="min-w-0">
+        <div className="flex items-center gap-3">
+          <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-primary text-xl font-semibold text-primary-foreground">
+            {store ? store.name.trim().charAt(0).toUpperCase() : <StoreIcon className="size-6" />}
+          </span>
+          <div className="min-w-0">
+            {store ? <div className="truncate text-lg font-semibold tracking-tight">{store.name}</div> : <Skeleton className="h-6 w-40" />}
+            <p className="mt-0.5 text-sm text-muted-foreground">Do‘kon bo‘yicha joriy ko‘rsatkichlar</p>
+          </div>
+        </div>
+        <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+          <span className="inline-flex items-center gap-1.5">
+            <Clock className="size-3.5" aria-hidden="true" />
+            {store ? tzLabel(store.timezone) : "—"}
+          </span>
+          {clock && <span className="tabular-nums">Do‘konda hozir {clock}</span>}
+        </div>
+      </div>
+      <ul className="divide-y divide-border/60 text-sm">
+        <UsageRow label="Omborlar" count={warehouses?.length} loading={!warehouses} />
+        <UsageRow label="Kassalar" count={registers?.length} loading={!registers} />
+        {showStaff && <UsageRow label="Xodimlar" count={staffTotal} loading={staffTotal == null} />}
+        <UsageRow label="Hozir smenada (kassir)" count={onShift} loading={!registers} />
+      </ul>
+    </Panel>
+  )
+}
+
 /* ───────────────────────── Sahifa ───────────────────────── */
 
 export default function OwnerSettingsPage() {
   const { isOwner, can } = useAuth()
   const [dlg, setDlg] = useState<"warehouse" | "register" | null>(null)
+  const [tabState, setTab] = useState<string>("")
   const manageRegisters = can("registers.manage")
   const seeDemo = can("demo_requests.read")
+  const seeStaff = can("users.manage")
 
   const store = useQuery({ queryKey: ["store"], queryFn: () => api.get<Store>("/stores/current"), enabled: isOwner })
   const whs = useQuery({ queryKey: ["warehouses"], queryFn: () => api.get<Warehouse[]>("/warehouses"), enabled: isOwner || manageRegisters })
   const regs = useQuery({ queryKey: ["registers"], queryFn: () => api.get<RegisterRow[]>("/registers"), enabled: isOwner || manageRegisters })
+  const staff = useQuery({ queryKey: ["users", "count"], queryFn: () => api.get<Paginated<unknown>>("/users", { page: 1, pageSize: 1 }), enabled: seeStaff })
   const demo = useDemoRequests(seeDemo)
-
-  const activeId = useActiveSection(["dokon", "kassalar", "omborlar", "demo"])
 
   if (!isOwner && !manageRegisters) return <NoAccess />
   const whName = (id: string) => whs.data?.find((w) => w.id === id)?.name ?? "—"
 
-  const nav = [
-    isOwner && { id: "dokon", label: "Do‘kon", icon: StoreIcon },
-    manageRegisters && { id: "kassalar", label: "Kassalar", icon: Monitor },
-    isOwner && { id: "omborlar", label: "Omborlar", icon: WarehouseIcon },
-    seeDemo && { id: "demo", label: "Demo so‘rovlar", icon: Inbox, count: demo.data?.total },
-  ].filter(Boolean) as { id: string; label: string; icon: typeof StoreIcon; count?: number }[]
+  const tabs = [
+    isOwner && { value: "store", label: "Do‘kon", icon: <StoreIcon /> },
+    (isOwner || manageRegisters) && { value: "places", label: (<><span className="hidden sm:inline">Omborlar va kassalar</span><span className="sm:hidden">Joylar</span></>), icon: <Monitor /> },
+    seeDemo && { value: "demo", label: "So‘rovlar", icon: <Inbox />, count: demo.data?.total || undefined },
+  ].filter(Boolean) as { value: string; label: React.ReactNode; icon: React.ReactNode; count?: number }[]
+  const tab = tabs.some((t) => t.value === tabState) ? tabState : (tabs[0]?.value ?? "")
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader title="Do‘kon sozlamalari" description="Do‘kon ma’lumotlari, kassalar va omborlar bir joyda." />
 
-      {isOwner && <StoreSummary store={store.data} warehouses={whs.data} registers={regs.data} />}
+      <ViewTabs variant="pill" tabs={tabs} value={tab} onChange={setTab} />
 
-      <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[12rem_minmax(0,1fr)] lg:gap-10">
-        {/* Bo‘limlar: desktopda yopishqoq chap menyu, mobilda gorizontal qator */}
-        <nav aria-label="Sozlamalar bo‘limlari" className="min-w-0 lg:sticky lg:top-20 lg:self-start">
-          <ul className="scroll-row -mx-4 gap-2 px-4 lg:mx-0 lg:flex-col lg:gap-1 lg:px-0">
-            {nav.map((n) => (
-              <li key={n.id} className="shrink-0">
-                <a
-                  href={`#${n.id}`}
-                  aria-current={activeId === n.id ? "location" : undefined}
-                  className="flex h-10 items-center gap-2 rounded-full border px-3.5 text-sm whitespace-nowrap lg:h-9 lg:rounded-lg lg:border-transparent lg:px-3 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground aria-[current]:border-primary aria-[current]:bg-primary/10 aria-[current]:font-medium lg:aria-[current]:border-transparent aria-[current]:text-primary"
-                >
-                  <n.icon className="size-4" aria-hidden="true" />
-                  {n.label}
-                  {n.count ? <Badge variant="secondary" className="ml-auto h-5 px-1.5 tabular-nums">{n.count}</Badge> : null}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </nav>
+      {tab === "store" && isOwner && (
+        <div className="space-y-4">
+          <UsagePanel store={store.data} warehouses={whs.data} registers={regs.data} staffTotal={staff.data?.total} showStaff={seeStaff} />
+          <Section id="dokon" title="Do‘kon ma’lumotlari" description="Nom va vaqt zonasi butun tizimda ishlatiladi.">
+            {store.isLoading ? (
+              <LoadingRows rows={2} />
+            ) : store.isError ? (
+              <ErrorState error={store.error} onRetry={() => void store.refetch()} />
+            ) : (
+              store.data && <StoreForm key={store.data.name + store.data.timezone} store={store.data} />
+            )}
+          </Section>
+        </div>
+      )}
 
-        <div className="min-w-0 space-y-10">
-          {isOwner && (
-            <Section id="dokon" title="Do‘kon ma’lumotlari" description="Nom va vaqt zonasi butun tizimda ishlatiladi.">
-              {store.isLoading ? (
-                <LoadingRows rows={2} />
-              ) : store.isError ? (
-                <ErrorState error={store.error} onRetry={() => void store.refetch()} />
-              ) : (
-                store.data && <StoreForm key={store.data.name + store.data.timezone} store={store.data} />
-              )}
-            </Section>
-          )}
-
+      {tab === "places" && (
+        <div className="space-y-8">
           {manageRegisters && (
             <Section
               id="kassalar"
@@ -498,14 +481,14 @@ export default function OwnerSettingsPage() {
               {whs.isLoading ? <LoadingRows rows={2} /> : whs.isError ? <ErrorState error={whs.error} onRetry={() => void whs.refetch()} /> : <WarehousesList warehouses={whs.data ?? []} registers={regs.data} />}
             </Section>
           )}
-
-          {seeDemo && (
-            <Section id="demo" title="Demo so‘rovlar" description="Landing sahifadan kelgan oxirgi 10 ta so‘rov. Raqam ustiga bosib qo‘ng‘iroq qiling.">
-              <DemoRequests q={demo} />
-            </Section>
-          )}
         </div>
-      </div>
+      )}
+
+      {tab === "demo" && seeDemo && (
+        <Section id="demo" title="Demo so‘rovlar" description="Landing sahifadan kelgan oxirgi 10 ta so‘rov. Raqam ustiga bosib qo‘ng‘iroq qiling.">
+          <DemoRequests q={demo} />
+        </Section>
+      )}
 
       {dlg && <AddDialog key={dlg} kind={dlg} onClose={() => setDlg(null)} warehouses={whs.data ?? []} />}
     </div>

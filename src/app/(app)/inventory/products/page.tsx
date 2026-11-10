@@ -3,18 +3,21 @@
 import { Suspense, useEffect, useState } from "react"
 import Link from "next/link"
 import { useQuery } from "@tanstack/react-query"
-import { Archive, ClipboardList, FileSpreadsheet, MoreHorizontal, Pencil, Plus, RotateCcw, Sparkles } from "lucide-react"
+import { Archive, ArrowUpDown, Boxes, CircleDot, ClipboardList, FileSpreadsheet, Hash, Layers, MoreHorizontal, Package, Pencil, Plus, RotateCcw, Sparkles, Tag, Wallet } from "lucide-react"
 import { AiImportDialog } from "@/components/inventory/ai-import-dialog"
 import { ArchiveDialog } from "@/components/inventory/archive-dialog"
-import { ActiveBadge, NATIVE_SELECT, TABLE_CARD, THEAD, TROW, WARN_BADGE, useCategories, type Product } from "@/components/inventory/common"
+import { ActiveBadge, TABLE_CARD, THEAD, TROW, useCategories, type Product } from "@/components/inventory/common"
 import { ProductFormDialog } from "@/components/inventory/product-form"
 import { ErrorState, EmptyState, LoadingRows } from "@/components/app/states"
 import { AddButton } from "@/components/app/add-button"
-import { FilterBar, FilterField, type FilterChip } from "@/components/app/filter-bar"
+import { InlineSelect } from "@/components/app/inline-select"
 import { PageHeader } from "@/components/app/page-header"
+import { ColumnHead } from "@/components/app/column-head"
+import { FeatureHint } from "@/components/app/feature-hint"
+import { StatusChip, DotLabel } from "@/components/app/status-chip"
+import { ViewTabs } from "@/components/app/view-tabs"
 import { SearchInput } from "@/components/app/search-input"
 import { PaginationBar } from "@/components/app/pagination-bar"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -118,43 +121,28 @@ function ProductsView() {
 
   const qtyCell = (p: Product) => (
     <span className="inline-flex flex-wrap items-center justify-end gap-1.5">
-      {isLow(p) && <Badge className={WARN_BADGE}>Kam qoldi</Badge>}
+      {isLow(p) && <StatusChip tone="warning">Kam qoldi</StatusChip>}
       <span className="tabular-nums">
         {formatQty(p.qty)} {UNIT_LABELS[p.unit]}
       </span>
     </span>
   )
 
-  const statusLabels: Record<string, string> = { archived: "Arxiv", all: "Barchasi" }
-  const sortLabels: Record<string, string> = {
-    "name:desc": "Nomi (Z–A)",
-    "salePrice:asc": "Narx: arzondan",
-    "salePrice:desc": "Narx: qimmatdan",
-    "createdAt:desc": "Yangi qo‘shilganlar",
-  }
-  const chips: FilterChip[] = []
-  if (categoryId) {
-    chips.push({
-      key: "category",
-      label: `Kategoriya: ${categories?.find((c) => c.id === categoryId)?.name ?? "…"}`,
-      onRemove: () => set({ category: null, page: 1 }),
-    })
-  }
-  if (status !== "active") chips.push({ key: "status", label: `Holat: ${statusLabels[status] ?? status}`, onRemove: () => set({ status: null, page: 1 }) })
-  if (low) chips.push({ key: "low", label: "Faqat kam qolganlar", onRemove: () => set({ low: null, page: 1 }) })
-  if (sort !== "name:asc") chips.push({ key: "sort", label: `Saralash: ${sortLabels[sort] ?? sort}`, onRemove: () => set({ sort: null, page: 1 }) })
-
+  const tab = status === "archived" ? "archived" : status === "all" ? "all" : low ? "low" : "active"
   return (
     <div className="space-y-4">
       <PageHeader
+        eyebrow={<><Boxes /> Ombor</>}
         title="Mahsulotlar"
         description="Katalog, narxlar va ombor qoldig‘i"
         actions={
           canManage && (
             <>
-              <Button variant="outline" className="h-10 max-sm:w-10 max-sm:px-0" aria-label="Ro‘yxat rasmidan qo‘shish (AI)" onClick={() => setAiOpen(true)}>
-                <Sparkles /> <span className="hidden sm:inline">Ro‘yxatdan qo‘shish</span>
-              </Button>
+              <FeatureHint id="products-ai-import" title="Yangi: AI bilan qo‘shish" hint="Qog‘ozdagi mahsulotlar ro‘yxatini rasmga oling — AI nom va narxlarni o‘zi o‘qib beradi.">
+                <Button variant="outline" className="h-10 max-sm:w-10 max-sm:px-0" aria-label="Ro‘yxat rasmidan qo‘shish (AI)" onClick={() => setAiOpen(true)}>
+                  <Sparkles /> <span className="hidden sm:inline">Ro‘yxatdan qo‘shish</span>
+                </Button>
+              </FeatureHint>
               <Button
                 variant="outline"
                 className="h-10 max-sm:w-10 max-sm:px-0"
@@ -170,45 +158,46 @@ function ProductsView() {
         }
       />
 
-      <FilterBar
-        search={<SearchInput value={q} onChange={setQ} placeholder="Nomi, SKU yoki shtrix-kod" aria-label="Qidirish" />}
-        activeCount={chips.length}
-        chips={chips}
-        onReset={() => set({ category: null, low: null, status: null, sort: null, page: 1 })}
-      >
-        <FilterField label="Kategoriya">
-          <select className={NATIVE_SELECT} value={categoryId} onChange={(e) => set({ category: e.target.value, page: 1 })}>
-            <option value="">Barcha kategoriyalar</option>
-            {categories?.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        </FilterField>
-        <FilterField label="Holat">
-          <select className={NATIVE_SELECT} value={status} onChange={(e) => set({ status: e.target.value === "active" ? null : e.target.value, page: 1 })}>
-            <option value="active">Faol</option>
-            <option value="archived">Arxiv</option>
-            <option value="all">Barchasi</option>
-          </select>
-        </FilterField>
-        <FilterField label="Qoldiq">
-          <select className={NATIVE_SELECT} value={low ? "1" : ""} onChange={(e) => set({ low: e.target.value || null, page: 1 })}>
-            <option value="">Barchasi</option>
-            <option value="1">Faqat kam qolganlar</option>
-          </select>
-        </FilterField>
-        <FilterField label="Saralash">
-          <select className={NATIVE_SELECT} value={sort} onChange={(e) => set({ sort: e.target.value === "name:asc" ? null : e.target.value, page: 1 })}>
-            <option value="name:asc">Nomi (A–Z)</option>
-            <option value="name:desc">Nomi (Z–A)</option>
-            <option value="salePrice:asc">Narx: arzondan</option>
-            <option value="salePrice:desc">Narx: qimmatdan</option>
-            <option value="createdAt:desc">Yangi qo‘shilganlar</option>
-          </select>
-        </FilterField>
-      </FilterBar>
+      <ViewTabs
+        variant="pill"
+        tabs={[
+          { value: "active", label: "Faol" },
+          { value: "low", label: "Kam qolgan" },
+          { value: "archived", label: "Arxiv" },
+          { value: "all", label: "Barchasi" },
+        ]}
+        value={tab}
+        onChange={(v) => set({ status: v === "active" || v === "low" ? null : v, low: v === "low" ? "1" : null, page: 1 })}
+        toolbar={
+          <>
+            <SearchInput className="min-w-0 flex-1 sm:w-64 sm:flex-none" value={q} onChange={setQ} placeholder="Nomi, SKU yoki shtrix-kod" aria-label="Qidirish" />
+            <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto">
+            <InlineSelect
+              className="w-full max-w-none sm:max-w-40"
+              ariaLabel="Kategoriya"
+              icon={<Tag />}
+              value={categoryId}
+              onChange={(v) => set({ category: v || null, page: 1 })}
+              options={[{ value: "", label: "Kategoriya" }, ...(categories ?? []).map((c) => ({ value: c.id, label: c.name }))]}
+            />
+            <InlineSelect
+              className="w-full max-w-none sm:max-w-40"
+              ariaLabel="Saralash"
+              icon={<ArrowUpDown />}
+              value={sort}
+              onChange={(v) => set({ sort: v === "name:asc" ? null : v, page: 1 })}
+              options={[
+                { value: "name:asc", label: "Nomi (A–Z)" },
+                { value: "name:desc", label: "Nomi (Z–A)" },
+                { value: "salePrice:asc", label: "Narx: arzondan" },
+                { value: "salePrice:desc", label: "Narx: qimmatdan" },
+                { value: "createdAt:desc", label: "Yangi qo‘shilganlar" },
+              ]}
+            />
+            </div>
+          </>
+        }
+      />
 
       {isLoading ? (
         <LoadingRows />
@@ -217,7 +206,7 @@ function ProductsView() {
       ) : !data || data.items.length === 0 ? (
         <EmptyState
           title="Mahsulot topilmadi"
-          description={urlQ || categoryId || low ? "Filtrlarni o‘zgartirib ko‘ring." : "Birinchi mahsulotni qo‘shing yoki import qiling."}
+          description={urlQ || categoryId || low ? "Qidiruv yoki kategoriyani o‘zgartirib ko‘ring." : "Birinchi mahsulotni qo‘shing yoki import qiling."}
           action={canManage && !urlQ && !categoryId && !low ? <Button onClick={openCreate}><Plus /> Mahsulot qo‘shish</Button> : undefined}
         />
       ) : (
@@ -226,19 +215,19 @@ function ProductsView() {
             <Table>
               <TableHeader className={THEAD}>
                 <TableRow>
-                  <TableHead>Nomi</TableHead>
-                  <TableHead>SKU</TableHead>
-                  <TableHead>Kategoriya</TableHead>
-                  <TableHead className="text-right">Narx</TableHead>
-                  {canCost && <TableHead className="hidden text-right lg:table-cell">Tannarx</TableHead>}
-                  <TableHead className="text-right">Qoldiq</TableHead>
-                  <TableHead>Holat</TableHead>
+                  <TableHead><ColumnHead icon={Package}>Nomi</ColumnHead></TableHead>
+                  <TableHead><ColumnHead icon={Hash}>SKU</ColumnHead></TableHead>
+                  <TableHead><ColumnHead icon={Tag}>Kategoriya</ColumnHead></TableHead>
+                  <TableHead className="text-right"><ColumnHead icon={Wallet}>Narx</ColumnHead></TableHead>
+                  {canCost && <TableHead className="hidden text-right lg:table-cell"><ColumnHead icon={Wallet}>Tannarx</ColumnHead></TableHead>}
+                  <TableHead className="text-right"><ColumnHead icon={Layers}>Qoldiq</ColumnHead></TableHead>
+                  <TableHead><ColumnHead icon={CircleDot}>Holat</ColumnHead></TableHead>
                   <TableHead className="w-10" />
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {data.items.map((p) => (
-                  <TableRow key={p.id} className={TROW}>
+                  <TableRow key={p.id} className={`${TROW} ${p.isActive ? "" : "text-muted-foreground"}`}>
                     <TableCell className="max-w-64">
                       <Link href={`/inventory/products/${p.id}`} className="font-medium hover:text-primary hover:underline">
                         {p.name}
@@ -246,7 +235,7 @@ function ProductsView() {
                       {p.barcodes[0] && <div className="text-xs text-muted-foreground tabular-nums">{p.barcodes[0].value}</div>}
                     </TableCell>
                     <TableCell className="text-muted-foreground">{p.sku ?? "—"}</TableCell>
-                    <TableCell className="text-muted-foreground">{p.category?.name ?? "—"}</TableCell>
+                    <TableCell>{p.category ? <DotLabel>{p.category.name}</DotLabel> : <span className="text-muted-foreground">—</span>}</TableCell>
                     <TableCell className="text-right tabular-nums">{formatMoney(p.salePrice)}</TableCell>
                     {canCost && <TableCell className="hidden text-right tabular-nums lg:table-cell">{p.costPrice !== undefined ? formatMoney(p.costPrice) : "—"}</TableCell>}
                     <TableCell className="text-right">{qtyCell(p)}</TableCell>
@@ -278,7 +267,7 @@ function ProductsView() {
                 </div>
                 <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
                   <ActiveBadge active={p.isActive} />
-                  {p.category && <span>{p.category.name}</span>}
+                  {p.category && <DotLabel className="text-xs">{p.category.name}</DotLabel>}
                   {canCost && p.costPrice !== undefined && <span>Tannarx: {formatMoney(p.costPrice)}</span>}
                 </div>
               </div>

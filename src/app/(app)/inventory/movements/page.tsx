@@ -2,18 +2,49 @@
 
 import { Suspense } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { X } from "lucide-react"
-import { MOVEMENT_LABELS, MovementBadge, NATIVE_SELECT, ProductPicker, TABLE_CARD, THEAD, TROW, REFERENCE_LABELS, useWarehouses, type Movement, type Product } from "@/components/inventory/common"
+import { Boxes, CalendarClock, Layers, Link2, Package, Tag, TextCursorInput, Warehouse, X } from "lucide-react"
+import { MOVEMENT_LABELS, MovementBadge, TABLE_CARD, THEAD, TROW, REFERENCE_LABELS, useWarehouses, type Movement, type Product } from "@/components/inventory/common"
 import { EmptyState, ErrorState, LoadingRows } from "@/components/app/states"
-import { DateRangeFields, FilterBar, FilterField, type FilterChip } from "@/components/app/filter-bar"
+import { InlineSelect } from "@/components/app/inline-select"
+import { PeriodPicker } from "@/components/app/period-picker"
 import { PageHeader } from "@/components/app/page-header"
+import { ColumnHead } from "@/components/app/column-head"
+import { ViewTabs } from "@/components/app/view-tabs"
 import { PaginationBar } from "@/components/app/pagination-bar"
-import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { api, type Paginated } from "@/lib/api"
 import { formatDateTime, formatQty, UNIT_LABELS } from "@/lib/format"
 import { useUrlState } from "@/hooks/use-url-state"
 import { cn } from "@/lib/utils"
+
+const PERIOD_OPTIONS = [
+  { value: "all", label: "Barcha davr" },
+  { value: "today", label: "Bugun" },
+  { value: "yesterday", label: "Kecha" },
+  { value: "week", label: "Oxirgi 7 kun" },
+  { value: "month", label: "Shu oy" },
+]
+
+const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+
+function presetRange(v: string): { from: string; to: string } {
+  const now = new Date()
+  const day = (back: number) => ymd(new Date(now.getFullYear(), now.getMonth(), now.getDate() - back))
+  if (v === "today") return { from: day(0), to: day(0) }
+  if (v === "yesterday") return { from: day(1), to: day(1) }
+  if (v === "week") return { from: day(6), to: day(0) }
+  if (v === "month") return { from: ymd(new Date(now.getFullYear(), now.getMonth(), 1)), to: day(0) }
+  return { from: "", to: "" }
+}
+
+function presetOf(from: string, to: string): string | null {
+  if (!from && !to) return "all"
+  for (const o of PERIOD_OPTIONS) {
+    const r = presetRange(o.value)
+    if (o.value !== "all" && r.from === from && r.to === to) return o.value
+  }
+  return null
+}
 
 export default function MovementsPage() {
   return (
@@ -62,76 +93,82 @@ function MovementsView() {
   )
   const source = (m: Movement) => (m.referenceType ? (REFERENCE_LABELS[m.referenceType] ?? m.referenceType) : "—")
 
-  const chips: FilterChip[] = []
-  if (warehouseId) chips.push({ key: "warehouse", label: `Ombor: ${warehouses?.find((w) => w.id === warehouseId)?.name ?? "…"}`, onRemove: () => set({ warehouse: null, page: 1 }) })
-  if (type) chips.push({ key: "type", label: `Tur: ${(MOVEMENT_LABELS as Record<string, string>)[type] ?? type}`, onRemove: () => set({ type: null, page: 1 }) })
-  if (from || to) {
-    const d = (v: string) => (v ? `${v.slice(8, 10)}.${v.slice(5, 7)}` : "…")
-    chips.push({ key: "date", label: `Sana: ${d(from)}–${d(to)}`, onRemove: () => set({ from: null, to: null, page: 1 }) })
-  }
-  if (productId) chips.push({ key: "product", label: `Mahsulot: ${productQ.data?.name ?? "…"}`, onRemove: () => set({ product: null, page: 1 }) })
+  const preset = presetOf(from, to)
+  const showWarehouse = (warehouses?.length ?? 0) > 1
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Ombor harakatlari" description="Kirim, chiqim va tuzatishlar tarixi" />
+      <PageHeader eyebrow={<><Boxes /> Ombor</>} title="Ombor harakatlari" description="Kirim, chiqim va tuzatishlar tarixi" />
 
-      <FilterBar activeCount={chips.length} chips={chips} onReset={() => set({ warehouse: null, type: null, product: null, from: null, to: null, page: 1 })}>
-        <FilterField label="Ombor">
-          <select className={NATIVE_SELECT} value={warehouseId} onChange={(e) => set({ warehouse: e.target.value, page: 1 })}>
-            <option value="">Barcha omborlar</option>
-            {warehouses?.map((w) => (
-              <option key={w.id} value={w.id}>
-                {w.name}
-              </option>
-            ))}
-          </select>
-        </FilterField>
-        <FilterField label="Tur">
-          <select className={NATIVE_SELECT} value={type} onChange={(e) => set({ type: e.target.value, page: 1 })}>
-            <option value="">Barcha turlar</option>
-            {Object.entries(MOVEMENT_LABELS).map(([k, v]) => (
-              <option key={k} value={k}>
-                {v}
-              </option>
-            ))}
-          </select>
-        </FilterField>
-        <FilterField label="Sana" group>
-          <DateRangeFields from={from} to={to} onFrom={(v) => set({ from: v, page: 1 })} onTo={(v) => set({ to: v, page: 1 })} />
-        </FilterField>
-        <FilterField label="Mahsulot" group>
-          {productId ? (
-            <div className="flex h-10 items-center justify-between gap-2 rounded-lg border px-2.5 text-sm font-normal">
-              <span className="truncate">{productQ.data?.name ?? "Mahsulot…"}</span>
-              <Button variant="ghost" size="icon-sm" className="max-md:size-9" aria-label="Mahsulot filtrini olib tashlash" onClick={() => set({ product: null, page: 1 })}>
-                <X />
-              </Button>
-            </div>
-          ) : (
-            <ProductPicker label="Mahsulot bo‘yicha" onPick={(p) => set({ product: p.id, page: 1 })} />
-          )}
-        </FilterField>
-      </FilterBar>
+      <ViewTabs
+        variant="pill"
+        tabs={[{ value: "", label: "Hammasi" }, ...Object.entries(MOVEMENT_LABELS).map(([value, label]) => ({ value, label }))]}
+        value={type}
+        onChange={(v) => set({ type: v || null, page: 1 })}
+        toolbar={
+          <>
+            {showWarehouse && (
+              <InlineSelect
+                ariaLabel="Ombor"
+                icon={<Warehouse />}
+                value={warehouseId}
+                onChange={(v) => set({ warehouse: v || null, page: 1 })}
+                options={[{ value: "", label: "Barcha omborlar" }, ...(warehouses ?? []).map((w) => ({ value: w.id, label: w.name }))]}
+              />
+            )}
+            <PeriodPicker
+              variant="inline"
+              options={PERIOD_OPTIONS}
+              value={preset ?? "all"}
+              onChange={(v) => {
+                const r = presetRange(v)
+                set({ from: r.from || null, to: r.to || null, page: 1 })
+              }}
+              custom={{
+                active: preset === null,
+                from,
+                to,
+                onFrom: (v) => set({ from: v || null, page: 1 }),
+                onTo: (v) => set({ to: v || null, page: 1 }),
+                invalid: !!from && !!to && from > to,
+              }}
+            />
+            {productId && (
+              <span className="inline-flex h-8 max-w-full min-w-0 items-center gap-1 rounded-lg border bg-card pl-2.5 text-sm font-medium">
+                <span className="truncate">Mahsulot: {productQ.data?.name ?? "…"}</span>
+                <button
+                  type="button"
+                  aria-label="Mahsulot filtrini olib tashlash"
+                  onClick={() => set({ product: null, page: 1 })}
+                  className="flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <X className="size-4" />
+                </button>
+              </span>
+            )}
+          </>
+        }
+      />
 
       {isLoading ? (
         <LoadingRows />
       ) : error ? (
         <ErrorState error={error} onRetry={() => refetch()} />
       ) : !data || data.items.length === 0 ? (
-        <EmptyState title="Harakatlar topilmadi" description="Filtrlarni o‘zgartirib ko‘ring." />
+        <EmptyState title="Harakatlar topilmadi" description="Davr yoki turni o‘zgartirib ko‘ring." />
       ) : (
         <>
           <div className={`${TABLE_CARD} hidden md:block`}>
             <Table>
               <TableHeader className={THEAD}>
                 <TableRow>
-                  <TableHead>Sana</TableHead>
-                  <TableHead>Mahsulot</TableHead>
-                  <TableHead>Tur</TableHead>
-                  <TableHead className="text-right">Miqdor</TableHead>
-                  <TableHead className="text-right">Qoldiq keyin</TableHead>
-                  <TableHead>Sabab</TableHead>
-                  <TableHead>Manba</TableHead>
+                  <TableHead><ColumnHead icon={CalendarClock}>Sana</ColumnHead></TableHead>
+                  <TableHead><ColumnHead icon={Package}>Mahsulot</ColumnHead></TableHead>
+                  <TableHead><ColumnHead icon={Tag}>Tur</ColumnHead></TableHead>
+                  <TableHead className="text-right"><ColumnHead icon={Layers}>Miqdor</ColumnHead></TableHead>
+                  <TableHead className="text-right"><ColumnHead icon={Layers}>Qoldiq keyin</ColumnHead></TableHead>
+                  <TableHead><ColumnHead icon={TextCursorInput}>Sabab</ColumnHead></TableHead>
+                  <TableHead><ColumnHead icon={Link2}>Manba</ColumnHead></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

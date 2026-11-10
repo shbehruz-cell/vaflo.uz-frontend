@@ -4,13 +4,14 @@ import { useState } from "react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
 import { useQuery } from "@tanstack/react-query"
-import { Archive, ArrowLeft, ClipboardList, Pencil, RotateCcw } from "lucide-react"
+import { Archive, ArrowLeft, Boxes, CalendarClock, ClipboardList, Layers, Pencil, RotateCcw, Tag, TextCursorInput } from "lucide-react"
 import { ArchiveDialog } from "@/components/inventory/archive-dialog"
-import { ActiveBadge, MovementBadge, REFERENCE_LABELS, THEAD, TROW, WARN_BADGE, type Movement, type Product } from "@/components/inventory/common"
+import { ActiveBadge, MovementBadge, REFERENCE_LABELS, THEAD, TROW, type Movement, type Product } from "@/components/inventory/common"
 import { ProductFormDialog } from "@/components/inventory/product-form"
 import { EmptyState, ErrorState, LoadingRows } from "@/components/app/states"
 import { PageHeader } from "@/components/app/page-header"
-import { Badge } from "@/components/ui/badge"
+import { ColumnHead } from "@/components/app/column-head"
+import { StatusChip } from "@/components/app/status-chip"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -72,6 +73,7 @@ export default function ProductDetailPage() {
     <div className="space-y-4">
       {back}
       <PageHeader
+        eyebrow={<><Boxes /> Mahsulot</>}
         title={
           <span className="flex flex-wrap items-center gap-2">
             {p.name} <ActiveBadge active={p.isActive} />
@@ -137,7 +139,7 @@ export default function ProductDetailPage() {
             <div className="text-3xl font-bold tracking-tight tabular-nums">
               {formatQty(p.qty)} <span className="text-base font-normal text-muted-foreground">{unit}</span>
             </div>
-            {low && <Badge className={WARN_BADGE}>Kam qoldi</Badge>}
+            {low && <StatusChip tone="warning">Kam qoldi</StatusChip>}
           </CardContent>
         </Card>
       </div>
@@ -159,11 +161,11 @@ export default function ProductDetailPage() {
                 <Table>
                   <TableHeader className={THEAD}>
                     <TableRow>
-                      <TableHead>Sana</TableHead>
-                      <TableHead>Tur</TableHead>
-                      <TableHead className="text-right">Miqdor</TableHead>
-                      <TableHead className="hidden text-right sm:table-cell">Qoldiq keyin</TableHead>
-                      <TableHead className="hidden md:table-cell">Sabab</TableHead>
+                      <TableHead><ColumnHead icon={CalendarClock}>Sana</ColumnHead></TableHead>
+                      <TableHead><ColumnHead icon={Tag}>Tur</ColumnHead></TableHead>
+                      <TableHead className="text-right"><ColumnHead icon={Layers}>Miqdor</ColumnHead></TableHead>
+                      <TableHead className="hidden text-right sm:table-cell"><ColumnHead icon={Layers}>Qoldiq keyin</ColumnHead></TableHead>
+                      <TableHead className="hidden md:table-cell"><ColumnHead icon={TextCursorInput}>Sabab</ColumnHead></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>

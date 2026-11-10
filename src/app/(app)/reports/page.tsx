@@ -1,21 +1,22 @@
 "use client"
 
-import { Suspense, useState } from "react"
+import { Suspense, useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { Download } from "lucide-react"
+import { AlertTriangle, CreditCard, Download, Layers, LineChart, Monitor, Package, Tag, Users } from "lucide-react"
 import { toast } from "sonner"
-import { FilterBar, FilterField, type FilterChip } from "@/components/app/filter-bar"
+import { InlineSelect } from "@/components/app/inline-select"
 import { PageHeader } from "@/components/app/page-header"
+import { MetricList, Panel, PanelHeader, type MetricRow } from "@/components/app/panel"
 import { EmptyState, ErrorState, LoadingRows, NoAccess } from "@/components/app/states"
-import { NativeSelect } from "@/components/reports/native-select"
+import { ViewTabs } from "@/components/app/view-tabs"
+import { TABLE_CARD, THEAD } from "@/components/inventory/common"
 import { PeriodFilter, usePeriod } from "@/components/reports/period-filter"
 import { SalesChart } from "@/components/reports/sales-chart"
-import type { CashierRow, LowStock, SalesByDay, TopProduct, TopProducts } from "@/components/reports/types"
+import type { CashierRow, LowStock, SalesByDay, TopProducts } from "@/components/reports/types"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Spinner } from "@/components/ui/spinner"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useUrlState } from "@/hooks/use-url-state"
 import { api, download, toQuery } from "@/lib/api"
 import { useAuth } from "@/lib/auth"
@@ -26,58 +27,41 @@ interface Named {
   name: string
 }
 
-function Section<T>({
+/** Panel ichidagi yuklanish / xato / bo‘sh holat o‘rami. */
+function PanelBody<T>({
   q,
   isEmpty,
   children,
+  rows = 4,
 }: {
   q: { isLoading: boolean; isError: boolean; error: unknown; refetch: () => unknown; data: T | undefined }
   isEmpty: (d: T) => boolean
   children: (d: T) => React.ReactNode
+  rows?: number
 }) {
-  if (q.isLoading) return <LoadingRows />
+  if (q.isLoading)
+    return (
+      <div className="space-y-2.5">
+        {Array.from({ length: rows }, (_, i) => (
+          <Skeleton key={i} className="h-8 w-full" />
+        ))}
+      </div>
+    )
   if (q.isError) return <ErrorState error={q.error} onRetry={() => void q.refetch()} />
-  if (!q.data || isEmpty(q.data)) return <EmptyState title="Bu davrda ma’lumot yo‘q" description="Davrni kengaytiring yoki filtrlarni tozalang." />
+  if (!q.data || isEmpty(q.data)) return <p className="py-6 text-center text-sm text-muted-foreground">Bu davrda ma’lumot yo‘q</p>
   return <>{children(q.data)}</>
 }
 
-function ProductsTable({ rows }: { rows: TopProduct[] }) {
-  return (
-    <div className="overflow-hidden rounded-xl border bg-card">
-      <Table>
-        <TableHeader className="bg-muted/50 text-xs [&_th]:text-muted-foreground">
-          <TableRow>
-            <TableHead>Mahsulot</TableHead>
-            <TableHead className="hidden md:table-cell">Kategoriya</TableHead>
-            <TableHead className="text-right">Miqdor</TableHead>
-            <TableHead className="hidden text-right sm:table-cell">Qaytgan</TableHead>
-            <TableHead className="text-right">Tushum</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {rows.map((p) => (
-            <TableRow className="h-11" key={p.productId}>
-              <TableCell className="max-w-48 truncate font-medium">{p.name}</TableCell>
-              <TableCell className="hidden text-muted-foreground md:table-cell">{p.category ?? "—"}</TableCell>
-              <TableCell className="text-right tabular-nums">{formatQty(p.qty)}</TableCell>
-              <TableCell className="hidden text-right tabular-nums sm:table-cell">{formatQty(p.refundedQty)}</TableCell>
-              <TableCell className="text-right tabular-nums">{formatMoney(p.revenue)}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
-  )
-}
+const share = (part: number, total: number) => (total > 0 && Number.isFinite(part) ? (part / total) * 100 : 0)
 
 function Reports() {
   const { get, set } = useUrlState()
   const { query, ready } = usePeriod("month")
   const [exporting, setExporting] = useState(false)
+  const [metric, setMetric] = useState<"revenue" | "receipts">("revenue")
   const registerId = get("registerId")
   const paymentMethod = get("paymentMethod")
   const categoryId = get("categoryId")
-  const tab = get("tab", "dynamics")
 
   const filters = { ...query, registerId, paymentMethod, categoryId }
 
@@ -90,8 +74,8 @@ function Reports() {
     enabled: ready,
   })
   const top = useQuery({
-    queryKey: ["reports", "top-products", filters, 20],
-    queryFn: () => api.get<TopProducts>("/reports/top-products", { ...filters, limit: 20 }),
+    queryKey: ["reports", "top-products", filters, 100],
+    queryFn: () => api.get<TopProducts>("/reports/top-products", { ...filters, limit: 100 }),
     enabled: ready,
   })
   const cashiers = useQuery({
@@ -101,10 +85,43 @@ function Reports() {
   })
   const low = useQuery({ queryKey: ["reports", "low-stock"], queryFn: () => api.get<LowStock>("/reports/low-stock") })
 
-  const chips: FilterChip[] = []
-  if (registerId) chips.push({ key: "registerId", label: `Kassa: ${registers.data?.find((r) => r.id === registerId)?.name ?? "tanlangan"}`, onRemove: () => set({ registerId: null }) })
-  if (paymentMethod) chips.push({ key: "paymentMethod", label: `To‘lov: ${PAYMENT_LABELS[paymentMethod] ?? paymentMethod}`, onRemove: () => set({ paymentMethod: null }) })
-  if (categoryId) chips.push({ key: "categoryId", label: `Kategoriya: ${categories.data?.find((c) => c.id === categoryId)?.name ?? "tanlangan"}`, onRemove: () => set({ categoryId: null }) })
+  const totals = useMemo(() => {
+    const s = byDay.data?.series ?? []
+    return { gross: s.reduce((n, r) => n + Number(r.gross), 0), receipts: s.reduce((n, r) => n + r.receipts, 0) }
+  }, [byDay.data])
+
+  const cashierRows: MetricRow[] = useMemo(() => {
+    const rows = [...(cashiers.data ?? [])].sort((a, b) => Number(b.grossSales) - Number(a.grossSales))
+    const sum = rows.reduce((n, r) => n + Number(r.grossSales), 0)
+    return rows.map((r) => ({
+      key: r.cashierId,
+      icon: <Users />,
+      label: r.name ?? "—",
+      count: formatMoney(r.grossSales),
+      pct: share(Number(r.grossSales), sum),
+    }))
+  }, [cashiers.data])
+
+  const categoryRows: MetricRow[] = useMemo(() => {
+    const map = new Map<string, number>()
+    for (const p of top.data?.byRevenue ?? []) {
+      const k = p.category ?? "Kategoriyasiz"
+      map.set(k, (map.get(k) ?? 0) + Number(p.revenue))
+    }
+    const entries = [...map.entries()].sort((a, b) => b[1] - a[1])
+    const sum = entries.reduce((n, [, v]) => n + v, 0)
+    return entries.slice(0, 8).map(([name, v]) => ({ key: name, icon: <Tag />, label: name, count: formatMoney(v), pct: share(v, sum) }))
+  }, [top.data])
+
+  const productRows: MetricRow[] = useMemo(() => {
+    return (top.data?.byRevenue ?? []).slice(0, 8).map((p) => ({
+      key: p.productId,
+      icon: <Package />,
+      label: p.name,
+      count: formatMoney(p.revenue),
+      pct: share(Number(p.revenue), totals.gross),
+    }))
+  }, [top.data, totals.gross])
 
   async function exportCsv() {
     setExporting(true)
@@ -118,81 +135,113 @@ function Reports() {
     }
   }
 
-  return (
-    <div className="space-y-5">
-      <PageHeader title="Hisobotlar" description="Savdo, mahsulot va kassirlar bo‘yicha tahlil" />
+  const allOpt = (label: string) => ({ value: "", label })
+  const noData = (d: SalesByDay) => d.series.every((x) => x.receipts === 0 && Number(x.refunds) === 0)
 
-      <div className="space-y-2.5">
-        <PeriodFilter defaultPreset="month" />
-        <FilterBar
-          activeCount={chips.length}
-          chips={chips}
-          onReset={() => set({ registerId: null, paymentMethod: null, categoryId: null })}
-          actions={
-            <Button
-              variant="outline"
-              className="h-11 shrink-0 max-sm:w-11 max-sm:px-0 md:h-10"
-              aria-label="CSV yuklab olish"
-              onClick={() => void exportCsv()}
-              disabled={!ready || exporting}
-            >
-              {exporting ? <Spinner /> : <Download />}
-              <span className="hidden sm:inline">CSV yuklab olish</span>
-            </Button>
-          }
-        >
-          <FilterField label="Kassa">
-            <NativeSelect
-            aria-label="Kassa"
-            value={registerId}
-            onChange={(e) => set({ registerId: e.target.value })}
-            options={[{ value: "", label: "Barcha kassalar" }, ...(registers.data ?? []).map((r) => ({ value: r.id, label: r.name }))]}
-          />
-          </FilterField>
-          <FilterField label="To‘lov usuli">
-            <NativeSelect
-            aria-label="To‘lov usuli"
-            value={paymentMethod}
-            onChange={(e) => set({ paymentMethod: e.target.value })}
-            options={[{ value: "", label: "Barcha to‘lov usullari" }, ...Object.entries(PAYMENT_LABELS).map(([value, label]) => ({ value, label }))]}
-          />
-          </FilterField>
-          <FilterField label="Kategoriya">
-            <NativeSelect
-            aria-label="Kategoriya"
-            value={categoryId}
-            onChange={(e) => set({ categoryId: e.target.value })}
-            options={[{ value: "", label: "Barcha kategoriyalar" }, ...(categories.data ?? []).map((c) => ({ value: c.id, label: c.name }))]}
-          />
-          </FilterField>
-        </FilterBar>
+  return (
+    <div className="space-y-4">
+      <PageHeader
+        title="Hisobotlar"
+        description="Savdo, mahsulot va kassirlar bo‘yicha tahlil"
+        actions={
+          <Button
+            variant="outline"
+            className="h-8 shrink-0 rounded-lg px-2.5 text-sm max-sm:w-8 max-sm:px-0"
+            aria-label="CSV yuklab olish"
+            onClick={() => void exportCsv()}
+            disabled={!ready || exporting}
+          >
+            {exporting ? <Spinner /> : <Download />}
+            <span className="hidden sm:inline">CSV yuklab olish</span>
+          </Button>
+        }
+      />
+
+      <div className="flex flex-wrap items-center gap-2">
+        <InlineSelect
+          ariaLabel="Kassa"
+          icon={<Monitor />}
+          value={registerId}
+          onChange={(v) => set({ registerId: v })}
+          options={[allOpt("Barcha kassalar"), ...(registers.data ?? []).map((r) => ({ value: r.id, label: r.name }))]}
+        />
+        <InlineSelect
+          ariaLabel="To‘lov usuli"
+          icon={<CreditCard />}
+          value={paymentMethod}
+          onChange={(v) => set({ paymentMethod: v })}
+          options={[allOpt("Barcha to‘lovlar"), ...Object.entries(PAYMENT_LABELS).map(([value, label]) => ({ value, label }))]}
+        />
+        <InlineSelect
+          ariaLabel="Kategoriya"
+          icon={<Layers />}
+          value={categoryId}
+          onChange={(v) => set({ categoryId: v })}
+          options={[allOpt("Barcha kategoriyalar"), ...(categories.data ?? []).map((c) => ({ value: c.id, label: c.name }))]}
+        />
       </div>
 
-      <Tabs value={tab} onValueChange={(v) => set({ tab: v === "dynamics" ? "" : String(v) })}>
-        <div className="scroll-row -mx-4 px-4 md:mx-0 md:px-0">
-          <TabsList variant="line" className="h-auto w-max max-md:gap-2 max-md:p-0">
-            <TabsTrigger value="dynamics" className="shrink-0 px-3 max-md:h-9 max-md:rounded-full max-md:border-border max-md:px-3.5 max-md:after:hidden max-md:data-active:border-primary! max-md:data-active:bg-primary/10! max-md:data-active:text-primary!">Savdo dinamikasi</TabsTrigger>
-            <TabsTrigger value="products" className="shrink-0 px-3 max-md:h-9 max-md:rounded-full max-md:border-border max-md:px-3.5 max-md:after:hidden max-md:data-active:border-primary! max-md:data-active:bg-primary/10! max-md:data-active:text-primary!">Mahsulotlar</TabsTrigger>
-            <TabsTrigger value="cashiers" className="shrink-0 px-3 max-md:h-9 max-md:rounded-full max-md:border-border max-md:px-3.5 max-md:after:hidden max-md:data-active:border-primary! max-md:data-active:bg-primary/10! max-md:data-active:text-primary!">Kassirlar</TabsTrigger>
-            <TabsTrigger value="low" className="shrink-0 px-3 max-md:h-9 max-md:rounded-full max-md:border-border max-md:px-3.5 max-md:after:hidden max-md:data-active:border-primary! max-md:data-active:bg-primary/10! max-md:data-active:text-primary!">Kam qolganlar</TabsTrigger>
-          </TabsList>
-        </div>
+      <Panel>
+        <PanelHeader
+          icon={<LineChart />}
+          title={metric === "revenue" ? "Sotuv:" : "Cheklar:"}
+          value={byDay.data ? (metric === "revenue" ? formatMoney(totals.gross) : String(totals.receipts)) : <Skeleton className="inline-block h-6 w-28 align-middle" />}
+          actions={
+            <>
+              <ViewTabs
+                variant="pill"
+                value={metric}
+                onChange={(v) => setMetric(v as "revenue" | "receipts")}
+                tabs={[
+                  { value: "revenue", label: "Tushum" },
+                  { value: "receipts", label: "Cheklar" },
+                ]}
+              />
+              <PeriodFilter defaultPreset="month" variant="inline" />
+            </>
+          }
+        />
+        <PanelBody q={byDay} rows={5} isEmpty={noData}>
+          {(d) => <SalesChart data={d.series} metric={metric} />}
+        </PanelBody>
+      </Panel>
 
-        <TabsContent value="dynamics" className="space-y-4">
-          <Section q={byDay} isEmpty={(d) => d.series.every((x) => x.receipts === 0 && Number(x.refunds) === 0)}>
-            {(d) => (
+      <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
+        <Panel>
+          <PanelHeader icon={<Users />} title="Kassirlar" />
+          <PanelBody q={cashiers} isEmpty={(d) => d.length === 0}>
+            {() => <MetricList columns={["Kassir", "Yalpi sotuv", "%"]} rows={cashierRows} />}
+          </PanelBody>
+        </Panel>
+        <Panel>
+          <PanelHeader icon={<Layers />} title="Kategoriyalar" />
+          <PanelBody q={top} isEmpty={(d) => d.byRevenue.length === 0}>
+            {() => (
               <>
-                <Card className="rounded-2xl">
-                  <CardHeader>
-                    <CardTitle>Kunlik yalpi sotuv va qaytarishlar</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <SalesChart data={d.series} />
-                  </CardContent>
-                </Card>
-                <ul className="divide-y rounded-xl border bg-card md:hidden">
-                  {[...d.series].reverse().map((r) => (
-                    <li key={r.date} className="space-y-1 p-3 text-sm">
+                <MetricList columns={["Kategoriya", "Tushum", "%"]} rows={categoryRows} />
+                <p className="mt-3 text-xs text-muted-foreground">Eng ko‘p sotilgan 100 ta mahsulot asosida.</p>
+              </>
+            )}
+          </PanelBody>
+        </Panel>
+        <Panel className="lg:col-span-2 xl:col-span-1">
+          <PanelHeader icon={<Package />} title="Top mahsulotlar" />
+          <PanelBody q={top} isEmpty={(d) => d.byRevenue.length === 0}>
+            {() => <MetricList columns={["Mahsulot", "Tushum", "Ulushi"]} rows={productRows} />}
+          </PanelBody>
+        </Panel>
+      </div>
+
+      <Panel>
+        <PanelHeader icon={<LineChart />} title="Kunlik tafsilot" />
+        <PanelBody q={byDay} rows={4} isEmpty={noData}>
+          {(d) => {
+            const rows = [...d.series].reverse()
+            return (
+              <>
+                <ul className="divide-y md:hidden">
+                  {rows.map((r) => (
+                    <li key={r.date} className="space-y-1 py-2.5 text-sm">
                       <div className="flex items-center justify-between gap-3">
                         <span className="font-medium">{formatDate(r.date + "T12:00:00+05:00")}</span>
                         <span className="font-semibold tabular-nums">{formatMoney(r.gross)}</span>
@@ -204,9 +253,9 @@ function Reports() {
                     </li>
                   ))}
                 </ul>
-                <div className="hidden overflow-hidden rounded-xl border bg-card md:block">
+                <div className={`hidden md:block ${TABLE_CARD}`}>
                   <Table>
-                    <TableHeader className="bg-muted/50 text-xs [&_th]:text-muted-foreground">
+                    <TableHeader className={THEAD}>
                       <TableRow>
                         <TableHead>Sana</TableHead>
                         <TableHead className="text-right">Cheklar</TableHead>
@@ -215,7 +264,7 @@ function Reports() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {[...d.series].reverse().map((r) => (
+                      {rows.map((r) => (
                         <TableRow className="h-11" key={r.date}>
                           <TableCell>{formatDate(r.date + "T12:00:00+05:00")}</TableCell>
                           <TableCell className="text-right tabular-nums">{r.receipts}</TableCell>
@@ -227,96 +276,54 @@ function Reports() {
                   </Table>
                 </div>
               </>
-            )}
-          </Section>
-        </TabsContent>
+            )
+          }}
+        </PanelBody>
+      </Panel>
 
-        <TabsContent value="products" className="space-y-4">
-          <Section q={top} isEmpty={(d) => d.byQty.length === 0}>
-            {(d) => (
-              <div className="grid gap-4 xl:grid-cols-2">
-                <div className="space-y-2">
-                  <h3 className="text-base font-semibold">Miqdor bo‘yicha</h3>
-                  <ProductsTable rows={d.byQty} />
-                </div>
-                <div className="space-y-2">
-                  <h3 className="text-base font-semibold">Tushum bo‘yicha</h3>
-                  <ProductsTable rows={d.byRevenue} />
-                </div>
-              </div>
-            )}
-          </Section>
-        </TabsContent>
-
-        <TabsContent value="cashiers">
-          <Section q={cashiers} isEmpty={(d) => d.length === 0}>
-            {(rows) => (
-              <div className="overflow-hidden rounded-xl border bg-card">
-                <Table>
-                  <TableHeader className="bg-muted/50 text-xs [&_th]:text-muted-foreground">
-                    <TableRow>
-                      <TableHead>Kassir</TableHead>
-                      <TableHead className="text-right">Cheklar</TableHead>
-                      <TableHead className="text-right">Yalpi sotuv</TableHead>
-                      <TableHead className="hidden text-right sm:table-cell">Qaytarilgan</TableHead>
-                      <TableHead className="hidden text-right md:table-cell">O‘rtacha chek</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {rows.map((r) => (
-                      <TableRow className="h-11" key={r.cashierId}>
-                        <TableCell className="font-medium">{r.name ?? "—"}</TableCell>
-                        <TableCell className="text-right tabular-nums">{r.receiptCount}</TableCell>
-                        <TableCell className="text-right tabular-nums">{formatMoney(r.grossSales)}</TableCell>
-                        <TableCell className="hidden text-right tabular-nums sm:table-cell">{formatMoney(r.refundedTotal)}</TableCell>
-                        <TableCell className="hidden text-right tabular-nums md:table-cell">{formatMoney(r.averageReceipt)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-          </Section>
-        </TabsContent>
-
-        <TabsContent value="low">
-          <Section q={low} isEmpty={(d) => d.items.length === 0}>
-            {(d) => (
-              <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">Ombor: {d.warehouse.name} (davr filtriga bog‘liq emas)</p>
-                <div className="overflow-hidden rounded-xl border bg-card">
-                  <Table>
-                    <TableHeader className="bg-muted/50 text-xs [&_th]:text-muted-foreground">
-                      <TableRow>
-                        <TableHead>Mahsulot</TableHead>
-                        <TableHead className="hidden sm:table-cell">SKU</TableHead>
-                        <TableHead className="hidden md:table-cell">Kategoriya</TableHead>
-                        <TableHead className="text-right">Qoldiq</TableHead>
-                        <TableHead className="text-right">Minimal</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {d.items.map((p) => (
-                        <TableRow className="h-11" key={p.id}>
-                          <TableCell className="max-w-48 truncate font-medium">{p.name}</TableCell>
-                          <TableCell className="hidden text-muted-foreground sm:table-cell">{p.sku ?? "—"}</TableCell>
-                          <TableCell className="hidden text-muted-foreground md:table-cell">{p.category ?? "—"}</TableCell>
-                          <TableCell className="text-right">
-                            <span className="rounded-md bg-amber-500/15 px-2 py-0.5 text-xs tabular-nums text-amber-700 dark:text-amber-300">
-                              {formatQty(p.qty)} {UNIT_LABELS[p.unit] ?? ""}
-                            </span>
-                          </TableCell>
-                          <TableCell className="text-right tabular-nums">{formatQty(p.minStock)}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </div>
-            )}
-          </Section>
-        </TabsContent>
-      </Tabs>
+      <Panel>
+        <PanelHeader
+          icon={<AlertTriangle />}
+          title="Kam qolgan mahsulotlar"
+          actions={low.data ? <span className="text-xs text-muted-foreground">Ombor: {low.data.warehouse.name} (davrga bog‘liq emas)</span> : null}
+        />
+        {low.isLoading ? (
+          <LoadingRows rows={3} />
+        ) : low.isError ? (
+          <ErrorState error={low.error} onRetry={() => void low.refetch()} />
+        ) : !low.data || low.data.items.length === 0 ? (
+          <EmptyState title="Kam qolgan mahsulot yo‘q" description="Qoldig‘i minimaldan past mahsulotlar shu yerda ko‘rinadi." />
+        ) : (
+          <div className={TABLE_CARD}>
+            <Table>
+              <TableHeader className={THEAD}>
+                <TableRow>
+                  <TableHead>Mahsulot</TableHead>
+                  <TableHead className="hidden sm:table-cell">SKU</TableHead>
+                  <TableHead className="hidden md:table-cell">Kategoriya</TableHead>
+                  <TableHead className="text-right">Qoldiq</TableHead>
+                  <TableHead className="text-right">Minimal</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {low.data.items.map((p) => (
+                  <TableRow className="h-11" key={p.id}>
+                    <TableCell className="max-w-48 truncate font-medium">{p.name}</TableCell>
+                    <TableCell className="hidden text-muted-foreground sm:table-cell">{p.sku ?? "—"}</TableCell>
+                    <TableCell className="hidden text-muted-foreground md:table-cell">{p.category ?? "—"}</TableCell>
+                    <TableCell className="text-right">
+                      <span className="rounded-md bg-amber-500/15 px-2 py-0.5 text-xs tabular-nums text-amber-700 dark:text-amber-300">
+                        {formatQty(p.qty)} {UNIT_LABELS[p.unit] ?? ""}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">{formatQty(p.minStock)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </Panel>
     </div>
   )
 }

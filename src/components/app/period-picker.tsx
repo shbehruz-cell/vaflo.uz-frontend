@@ -31,6 +31,7 @@ const shortDate = (d: string) => (d ? `${d.slice(8, 10)}.${d.slice(5, 7)}` : "�
  * Davr tanlash (Bugun, Kecha, Hafta…).
  * Kompyuter/planshet: ixcham segmentli tugma (≤ 5 ta variant) + yonida "Boshqa" (sana oralig‘i oynasi).
  * Telefon: bitta tugma ("Bugun ▾") — bosilsa pastdan ro‘yxat va sana oralig‘i chiqadi; ekran tepasini egallamaydi.
+ * `variant="inline"`: hamma ekranda bitta ixcham (32px) tugma "Bugun ▾" — InlineSelect uslubida; kompyuterda popover, telefonda pastki oyna.
  */
 export function PeriodPicker({
   options,
@@ -38,6 +39,7 @@ export function PeriodPicker({
   onChange,
   custom,
   className,
+  variant = "segmented",
 }: {
   options: PeriodOption[]
   /** Tanlangan variant qiymati (maxsus oraliqda ahamiyatsiz) */
@@ -45,9 +47,12 @@ export function PeriodPicker({
   onChange: (value: string) => void
   custom?: PeriodCustomRange
   className?: string
+  variant?: "segmented" | "inline"
 }) {
   const isMobile = useIsMobile()
   const [sheetOpen, setSheetOpen] = useState(false)
+  const [popOpen, setPopOpen] = useState(false)
+  const inline = variant === "inline"
   const customActive = !!custom?.active
   const rangeLabel = custom ? `${shortDate(custom.from)} – ${shortDate(custom.to)}` : ""
   const currentLabel = customActive ? rangeLabel : (options.find((o) => o.value === value)?.label ?? "Davr")
@@ -65,7 +70,7 @@ export function PeriodPicker({
       <>
         <Button
           variant="outline"
-          className={cn("h-10 gap-2 rounded-xl bg-card px-3 font-medium", className)}
+          className={cn(inline ? "h-8 max-w-48 gap-1.5 rounded-lg bg-card px-2.5 text-sm font-medium" : "h-10 gap-2 rounded-xl bg-card px-3 font-medium", className)}
           aria-haspopup="dialog"
           onClick={() => setSheetOpen(true)}
         >
@@ -113,6 +118,54 @@ export function PeriodPicker({
           </SheetContent>
         </Sheet>
       </>
+    )
+  }
+
+  if (inline) {
+    return (
+      <Popover open={popOpen} onOpenChange={setPopOpen}>
+        <PopoverTrigger
+          render={
+            <Button variant="outline" aria-label="Davr" className={cn("h-8 max-w-48 gap-1.5 rounded-lg bg-card px-2.5 text-sm font-medium", className)} />
+          }
+        >
+          <CalendarDays className="text-muted-foreground" />
+          <span className="truncate">{currentLabel}</span>
+          <ChevronDown className="text-muted-foreground" />
+        </PopoverTrigger>
+        <PopoverContent align="end" className="w-[min(18rem,calc(100vw-2rem))] gap-0 p-1.5">
+          <div role="radiogroup" aria-label="Davr">
+            {options.map((o) => {
+              const active = !customActive && o.value === value
+              return (
+                <button
+                  key={o.value}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  onClick={() => {
+                    onChange(o.value)
+                    setPopOpen(false)
+                  }}
+                  className={cn(
+                    "flex h-9 w-full items-center justify-between rounded-md px-2.5 text-left text-sm outline-none hover:bg-muted focus-visible:bg-muted",
+                    active && "font-semibold text-primary",
+                  )}
+                >
+                  {o.label}
+                  {active && <Check className="size-4" />}
+                </button>
+              )
+            })}
+          </div>
+          {custom && (
+            <div className="mx-1 mt-1.5 border-t p-1.5 pt-3">
+              <p className={cn("mb-2 text-sm font-medium", customActive && "text-primary")}>Boshqa sana oralig‘i</p>
+              {customFields}
+            </div>
+          )}
+        </PopoverContent>
+      </Popover>
     )
   }
 

@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useQuery } from "@tanstack/react-query"
-import { Banknote, ChevronRight, CreditCard, ReceiptText, Shuffle, type LucideIcon } from "lucide-react"
+import { Banknote, ChevronRight, CreditCard, Receipt, ReceiptText, Shuffle, type LucideIcon } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { FilterBar, FilterField, type FilterChip } from "@/components/app/filter-bar"
 import { SearchInput } from "@/components/app/search-input"
@@ -133,6 +133,9 @@ function SalesContent() {
     <div className="space-y-3 sm:space-y-4">
       <div className="flex items-end justify-between gap-3">
         <div className="min-w-0">
+          <div className="mb-1.5 hidden items-center gap-1.5 text-xs font-medium text-muted-foreground md:flex [&_svg]:size-3.5">
+            <Receipt /> Sotuvlar
+          </div>
           <h1 className="text-2xl font-semibold tracking-tight">Sotuvlar</h1>
           <p className="mt-0.5 text-sm text-muted-foreground">
             {q.data ? `${q.data.total} ta chek` : "Cheklar, qaytarishlar va bekor qilinganlar"}

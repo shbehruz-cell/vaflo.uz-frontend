@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useQuery } from "@tanstack/react-query"
-import { Plus } from "lucide-react"
+import { CalendarDays, Hash, Phone, Plus, User, Users, Wallet } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { TABLE_CARD, THEAD, TROW } from "@/components/inventory/common"
@@ -12,6 +12,7 @@ import { AddButton } from "@/components/app/add-button"
 import { FilterBar } from "@/components/app/filter-bar"
 import { SearchInput } from "@/components/app/search-input"
 import { PageHeader } from "@/components/app/page-header"
+import { ColumnHead } from "@/components/app/column-head"
 import { EmptyState, ErrorState, LoadingRows } from "@/components/app/states"
 import { PaginationBar } from "@/components/app/pagination-bar"
 import { CustomerDialog, type Customer } from "@/components/customers/customer-dialog"
@@ -56,6 +57,7 @@ function CustomersContent() {
   return (
     <div className="space-y-4">
       <PageHeader
+        eyebrow={<><Users /> CRM</>}
         title="Xaridorlar"
         description="Doimiy xaridorlar bazasi"
         actions={can("customers.manage") && <AddButton label="Xaridor qo‘shish" onClick={() => setCreating(true)} />}
@@ -97,11 +99,11 @@ function CustomersContent() {
             <Table>
               <TableHeader className={THEAD}>
                 <TableRow>
-                  <TableHead>Ism</TableHead>
-                  <TableHead>Telefon</TableHead>
-                  {showStats && <TableHead className="text-right">Xaridlar</TableHead>}
-                  {showStats && <TableHead className="text-right">Jami</TableHead>}
-                  <TableHead>Yaratilgan</TableHead>
+                  <TableHead><ColumnHead icon={User}>Ism</ColumnHead></TableHead>
+                  <TableHead><ColumnHead icon={Phone}>Telefon</ColumnHead></TableHead>
+                  {showStats && <TableHead className="text-right"><ColumnHead icon={Hash}>Xaridlar</ColumnHead></TableHead>}
+                  {showStats && <TableHead className="text-right"><ColumnHead icon={Wallet}>Jami</ColumnHead></TableHead>}
+                  <TableHead><ColumnHead icon={CalendarDays}>Yaratilgan</ColumnHead></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

@@ -4,12 +4,13 @@ import { Suspense, use, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useQuery } from "@tanstack/react-query"
-import { ArrowLeft, Pencil } from "lucide-react"
+import { ArrowLeft, CalendarDays, CircleDot, Pencil, Receipt, Users, Wallet } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { TABLE_CARD, THEAD, TROW } from "@/components/inventory/common"
 import { PageHeader } from "@/components/app/page-header"
+import { ColumnHead } from "@/components/app/column-head"
 import { EmptyState, ErrorState, LoadingRows } from "@/components/app/states"
 import { PaginationBar } from "@/components/app/pagination-bar"
 import { CustomerDialog, type Customer } from "@/components/customers/customer-dialog"
@@ -53,6 +54,7 @@ function CustomerContent({ id }: { id: string }) {
   return (
     <div className="space-y-4">
       <PageHeader
+        eyebrow={<><Users /> CRM</>}
         title={c.name}
         description={`Qo‘shilgan: ${formatDate(c.createdAt)}`}
         className="flex-row items-center gap-3 sm:items-end"
@@ -108,10 +110,10 @@ function CustomerContent({ id }: { id: string }) {
           <Table>
             <TableHeader className={THEAD}>
               <TableRow>
-                <TableHead>Chek №</TableHead>
-                <TableHead>Sana</TableHead>
-                <TableHead className="text-right">Jami</TableHead>
-                <TableHead>Holat</TableHead>
+                <TableHead><ColumnHead icon={Receipt}>Chek №</ColumnHead></TableHead>
+                <TableHead><ColumnHead icon={CalendarDays}>Sana</ColumnHead></TableHead>
+                <TableHead className="text-right"><ColumnHead icon={Wallet}>Jami</ColumnHead></TableHead>
+                <TableHead><ColumnHead icon={CircleDot}>Holat</ColumnHead></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

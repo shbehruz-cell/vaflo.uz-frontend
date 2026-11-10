@@ -2,10 +2,12 @@
 
 import { Suspense, useEffect, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { Braces } from "lucide-react"
+import { Braces, CalendarClock, ClipboardList, Package, ScrollText, UserRound } from "lucide-react"
 import { DateRangeFields, FilterBar, FilterField, type FilterChip } from "@/components/app/filter-bar"
 import { SearchInput } from "@/components/app/search-input"
 import { PageHeader } from "@/components/app/page-header"
+import { ColumnHead } from "@/components/app/column-head"
+import { TABLE_CARD, THEAD, TROW } from "@/components/inventory/common"
 import { PaginationBar } from "@/components/app/pagination-bar"
 import { EmptyState, ErrorState, LoadingRows, NoAccess } from "@/components/app/states"
 import { NativeSelect } from "@/components/reports/native-select"
@@ -128,7 +130,14 @@ function AuditLog() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title="Audit jurnali" description="Tizimdagi muhim amallar tarixi. Yozuvlarni o‘zgartirib bo‘lmaydi." />
+      <PageHeader
+        eyebrow={
+          <>
+            <ScrollText /> Audit
+          </>
+        }
+        title="Audit jurnali" description="Tizimdagi muhim amallar tarixi. Yozuvlarni o‘zgartirib bo‘lmaydi."
+      />
 
       <FilterBar
         search={<SearchInput aria-label="Amal prefiksi" placeholder="Amal kodi (masalan product.)" value={actionInput} onChange={setActionInput} />}
@@ -183,20 +192,20 @@ function AuditLog() {
               </div>
             ))}
           </div>
-          <div className="hidden overflow-hidden rounded-2xl border bg-card md:block">
+          <div className={`hidden md:block ${TABLE_CARD}`}>
             <Table>
-              <TableHeader className="bg-muted/50 [&_th]:h-10 [&_th]:text-xs [&_th]:font-medium [&_th]:text-muted-foreground">
+              <TableHeader className={THEAD}>
                 <TableRow>
-                  <TableHead>Vaqt</TableHead>
-                  <TableHead>Xodim</TableHead>
-                  <TableHead>Amal</TableHead>
-                  <TableHead className="hidden md:table-cell">Obyekt</TableHead>
+                  <TableHead><ColumnHead icon={CalendarClock}>Vaqt</ColumnHead></TableHead>
+                  <TableHead><ColumnHead icon={UserRound}>Xodim</ColumnHead></TableHead>
+                  <TableHead><ColumnHead icon={ClipboardList}>Amal</ColumnHead></TableHead>
+                  <TableHead className="hidden md:table-cell"><ColumnHead icon={Package}>Obyekt</ColumnHead></TableHead>
                   <TableHead className="text-right">Tafsilot</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {q.data.items.map((r) => (
-                  <TableRow key={r.id}>
+                  <TableRow key={r.id} className={TROW}>
                     <TableCell className="whitespace-nowrap text-sm text-muted-foreground">{formatDateTime(r.createdAt)}</TableCell>
                     <TableCell>{r.actorName ?? <span className="text-muted-foreground">Tizim</span>}</TableCell>
                     <TableCell>

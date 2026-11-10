@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import {
   AlertCircle,
@@ -64,12 +64,11 @@ type Mode = "cash" | "card" | "mixed";
 const MODES: {
   value: Mode;
   label: string;
-  hint: string;
   icon: typeof Banknote;
 }[] = [
-  { value: "cash", label: "Naqd", hint: "Qaytim hisoblanadi", icon: Banknote },
-  { value: "card", label: "Karta", hint: "Terminal orqali", icon: CreditCard },
-  { value: "mixed", label: "Aralash", hint: "Naqd + karta", icon: Shuffle },
+  { value: "cash", label: "Naqd", icon: Banknote },
+  { value: "card", label: "Karta", icon: CreditCard },
+  { value: "mixed", label: "Aralash", icon: Shuffle },
 ];
 
 const cleanNum = (v: string) => v.replace(/[^\d.]/g, "");
@@ -80,14 +79,24 @@ const finePointer = () =>
 const roundUp = (total: number, stepSom: number) =>
   Math.ceil(total / (stepSom * 100)) * stepSom * 100;
 
+/** Chegirma popover holati — Escape faqat popover’ni yopishi uchun (bir vaqtda bitta to‘lov oynasi). */
+const discountPopover = { open: false, closedAt: 0 }
+
 export function PaymentDialog({
   open,
   onOpenChange,
   ...rest
 }: PaymentProps & { open: boolean; onOpenChange: (o: boolean) => void }) {
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="gap-5 sm:max-w-lg">
+    <Dialog
+      open={open}
+      onOpenChange={(o, details) => {
+        // Chegirma popover’i ochiq paytda bosilgan Escape faqat popover’ni yopadi, to‘lov oynasini emas.
+        if (!o && details.reason === "escape-key" && (discountPopover.open || Date.now() - discountPopover.closedAt < 300)) return
+        onOpenChange(o)
+      }}
+    >
+      <DialogContent className="gap-4 sm:max-w-lg sm:gap-5">
         <PaymentBody {...rest} />
       </DialogContent>
     </Dialog>
@@ -136,7 +145,7 @@ function CardTypePicker({
             aria-label={c.label}
             onClick={() => onChange(c.value)}
             className={cn(
-              "relative flex flex-col items-center gap-1.5 rounded-xl border bg-card px-2 text-xs font-medium transition-all outline-none hover:border-primary/40 hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50",
+              "relative flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl border bg-card px-2 text-xs leading-4 font-medium transition-colors outline-none hover:border-primary/40 hover:bg-muted/50 active:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50",
               compact ? "py-2" : "py-2 sm:py-3",
               active &&
                 "border-primary bg-primary/5 text-primary ring-1 ring-primary hover:border-primary hover:bg-primary/5",
@@ -191,8 +200,8 @@ function MoneyInput({
         autoComplete="off"
         aria-invalid={invalid || undefined}
         className={cn(
-          "text-right font-semibold tabular-nums",
-          large ? "text-2xl" : "text-base",
+          "h-full text-right font-semibold tabular-nums",
+          large ? "text-2xl md:text-2xl" : "text-base md:text-base",
         )}
         value={value}
         onChange={(e) => onChange(cleanNum(e.target.value))}
@@ -264,6 +273,8 @@ function PaymentBody({
     ...(terminalRef.trim() && { externalReference: terminalRef.trim() }),
   };
 
+  const submittingRef = useRef(false);
+  const doneRef = useRef(false);
   const pay = useMutation({
     mutationFn: () => {
       const payments =
@@ -312,6 +323,8 @@ function PaymentBody({
       });
     },
     onSuccess: (receipt) => {
+      if (doneRef.current) return;
+      doneRef.current = true;
       toast.success(`Sotuv yakunlandi: ${receipt.receiptNo}`);
       onSuccess(receipt);
     },
@@ -334,10 +347,15 @@ function PaymentBody({
       setError(msg);
       toast.error(msg);
     },
+    onSettled: () => {
+      submittingRef.current = false;
+    },
   });
 
   const submit = () => {
-    if (!canSubmit || pay.isPending) return;
+    if (!canSubmit || pay.isPending || submittingRef.current || doneRef.current)
+      return;
+    submittingRef.current = true;
     setError(null);
     pay.mutate();
   };
@@ -355,7 +373,7 @@ function PaymentBody({
       <button
         type="button"
         onClick={() => setShowRef(true)}
-        className="flex h-10 items-center gap-1.5 rounded-lg px-1 text-sm font-medium text-primary outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+        className="flex h-11 items-center gap-2 rounded-lg px-1 text-sm font-medium text-primary outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50 pointer-fine:h-10"
       >
         <Hash className="size-4" /> Terminal chek raqamini kiritish
       </button>
@@ -364,12 +382,13 @@ function PaymentBody({
         <FieldLabel htmlFor="terminal-ref" className="text-muted-foreground">
           Terminal chek raqami <span className="font-normal">(ixtiyoriy)</span>
         </FieldLabel>
-        <InputGroup className="h-10">
+        <InputGroup className="h-11 pointer-fine:h-10">
           <InputGroupAddon>
             <Hash className="text-muted-foreground" />
           </InputGroupAddon>
           <InputGroupInput
             id="terminal-ref"
+            className="h-full text-base md:text-sm"
             enterKeyHint="done"
             maxLength={32}
             autoComplete="off"
@@ -391,11 +410,13 @@ function PaymentBody({
   return (
     <>
       <DialogHeader>
-        <DialogTitle className="text-lg">To‘lov</DialogTitle>
-        <DialogDescription className="flex items-center gap-3">
+        <DialogTitle className="text-base leading-6 font-semibold">
+          To‘lov
+        </DialogTitle>
+        <DialogDescription className="flex items-center gap-3 text-sm leading-5">
           <span>{itemCount} ta mahsulot</span>
           <span className="flex min-w-0 items-center gap-1.5">
-            <UserRound className="size-3.5 shrink-0" />
+            <UserRound className="size-4 shrink-0" />
             <span className="truncate">
               {customer?.name ?? "Ixtiyoriy xaridor"}
             </span>
@@ -404,31 +425,35 @@ function PaymentBody({
       </DialogHeader>
 
       {/* Jami summa */}
-      <div className="rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3">
+      <div className="rounded-xl border bg-muted/40 px-4 py-3">
         <div className="flex flex-wrap items-end justify-between gap-x-3 gap-y-2">
           <div className="min-w-0">
-            <div className="text-xs font-medium text-muted-foreground">
+            <div className="text-xs leading-4 font-medium text-muted-foreground">
               To‘lanadigan summa
             </div>
-            <div className="mt-0.5 text-3xl font-bold tracking-tight whitespace-nowrap text-primary tabular-nums sm:text-4xl">
+            <div className="mt-1 text-3xl leading-9 font-bold tracking-[-0.02em] whitespace-nowrap text-foreground tabular-nums sm:text-4xl sm:leading-10">
               {formatMoney(som(total))}
             </div>
           </div>
-          <div className="flex shrink-0 flex-col items-end gap-1 text-xs text-muted-foreground">
+          <div className="flex shrink-0 flex-col items-end gap-1 text-xs leading-4 text-muted-foreground">
             {math.discount > 0 && (
               <div className="line-through tabular-nums">
                 {formatMoney(som(math.subtotal))}
               </div>
             )}
             {canDiscount ? (
-              <Popover>
+              <Popover
+                onOpenChange={(o) => {
+                  discountPopover.open = o
+                  if (!o) discountPopover.closedAt = Date.now()
+                }}
+              >
                 <PopoverTrigger
                   render={
                     <Button
                       type="button"
-                      variant={math.discount > 0 ? "secondary" : "outline"}
-                      size="xs"
-                      className="rounded-full bg-background tabular-nums"
+                      variant="outline"
+                      className="h-11 gap-1.5 rounded-lg bg-background px-3 text-sm tabular-nums pointer-fine:h-8"
                       aria-label="Chegirma qo‘shish yoki o‘zgartirish"
                     />
                   }
@@ -495,22 +520,18 @@ function PaymentBody({
               setError(null);
             }
           }}
-          variant="outline"
-          spacing={2}
+          spacing={1}
           aria-label="To‘lov usuli"
-          className="grid w-full grid-cols-3"
+          className="grid w-full grid-cols-3 rounded-xl bg-muted p-1"
         >
           {MODES.map((m) => (
             <ToggleGroupItem
               key={m.value}
               value={m.value}
-              className="h-auto flex-col gap-1 rounded-xl py-2.5 sm:py-3 data-pressed:border-primary data-pressed:bg-primary/10 data-pressed:text-primary [&_svg:not([class*='size-'])]:size-5"
+              className="h-11 gap-2 rounded-lg text-muted-foreground hover:bg-card/60 active:bg-card/60 aria-pressed:bg-card aria-pressed:text-foreground aria-pressed:shadow-xs aria-pressed:hover:bg-card dark:aria-pressed:bg-secondary dark:aria-pressed:hover:bg-secondary pointer-fine:h-9 [&_svg:not([class*='size-'])]:size-4"
             >
               <m.icon />
-              <span className="text-sm font-semibold">{m.label}</span>
-              <span className="hidden text-[11px] font-normal text-muted-foreground sm:block">
-                {m.hint}
-              </span>
+              <span className="text-sm leading-5 font-semibold">{m.label}</span>
             </ToggleGroupItem>
           ))}
         </ToggleGroup>
@@ -544,7 +565,7 @@ function PaymentBody({
                     aria-pressed={active}
                     onClick={() => setReceived(String(som(q)))}
                     className={cn(
-                      "h-12 rounded-xl border text-sm font-semibold tabular-nums outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/50 sm:h-10",
+                      "h-12 rounded-xl border text-sm font-semibold tabular-nums outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/50 pointer-fine:h-10",
                       active
                         ? "border-primary bg-primary text-primary-foreground"
                         : "bg-card hover:bg-muted active:bg-muted",
@@ -556,6 +577,8 @@ function PaymentBody({
               })}
             </div>
             <div
+              aria-live="polite"
+              aria-atomic="true"
               className={cn(
                 "flex items-center justify-between rounded-xl border px-4 py-3",
                 change < 0
@@ -568,7 +591,7 @@ function PaymentBody({
               </span>
               <span
                 className={cn(
-                  "text-2xl font-bold tabular-nums",
+                  "text-2xl leading-8 font-bold tabular-nums",
                   change < 0 && "text-destructive",
                 )}
               >
@@ -590,8 +613,8 @@ function PaymentBody({
               <CardTypePicker value={cardType} onChange={setCardType} />
             </Field>
             {terminalField}
-            <p className="flex gap-2 text-xs text-muted-foreground">
-              <Info className="mt-0.5 size-3.5 shrink-0" />
+            <p className="flex gap-2 text-xs leading-4 text-muted-foreground">
+              <Info className="size-4 shrink-0" />
               To‘lovni terminalda yakunlang, so‘ng shu yerda tasdiqlang.
             </p>
           </div>
@@ -642,7 +665,11 @@ function PaymentBody({
                   style={{ width: `${cardShare}%` }}
                 />
               </div>
-              <div className="flex items-center justify-between text-xs">
+              <div
+                aria-live="polite"
+                aria-atomic="true"
+                className="flex items-center justify-between text-xs leading-4"
+              >
                 <span className="flex items-center gap-3 text-muted-foreground">
                   <span className="flex items-center gap-1">
                     <span className="size-2 rounded-full bg-primary" /> Naqd
@@ -652,8 +679,8 @@ function PaymentBody({
                   </span>
                 </span>
                 {mixOk ? (
-                  <span className="flex items-center gap-1 font-medium text-primary">
-                    <Check className="size-3.5" /> Summa to‘g‘ri
+                  <span className="flex items-center gap-1 font-medium text-foreground">
+                    <Check className="size-4" /> Summa to‘g‘ri
                   </span>
                 ) : (
                   <span className="font-medium text-destructive tabular-nums">
@@ -677,34 +704,47 @@ function PaymentBody({
           </div>
         )}
 
-        {error && (
-          <p
-            role="alert"
-            className="flex gap-2 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"
-          >
-            <AlertCircle className="mt-0.5 size-4 shrink-0" />
-            {error}
-          </p>
-        )}
-
         {/* Tasdiqlash tugmasi oyna pastida doim ko‘rinadi */}
-        <div className="sticky bottom-0 -mx-4 -mb-[max(1rem,env(safe-area-inset-bottom))] border-t bg-popover px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] sm:-mb-4 sm:pb-4">
+        <div className="sticky bottom-0 -mx-4 -mb-[max(1rem,env(safe-area-inset-bottom))] space-y-3 border-t bg-popover px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] sm:-mb-4 sm:pb-4">
+          {error && (
+            <p
+              role="alert"
+              className="flex gap-2 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm leading-5 text-destructive"
+            >
+              <AlertCircle className="mt-0.5 size-4 shrink-0" />
+              {error}
+            </p>
+          )}
           <Button
             type="submit"
             size="lg"
-            className="h-14 w-full justify-between rounded-xl px-5 text-base sm:h-12"
+            className="h-14 w-full justify-between rounded-xl px-5 text-base pointer-fine:h-12"
             disabled={!canSubmit || pay.isPending}
+            aria-busy={pay.isPending || undefined}
           >
-            <span className="flex items-center gap-2">
-              {pay.isPending ? <Spinner /> : <Check />} Tasdiqlash
+            <span className="flex shrink-0 items-center gap-2">
+              {pay.isPending ? <Spinner /> : <Check />}
+              {pay.isPending ? "Yuborilmoqda…" : "Tasdiqlash"}
               <Kbd className="hidden bg-primary-foreground/15 text-primary-foreground pointer-fine:inline-flex">
                 Enter
               </Kbd>
             </span>
-            <span className="text-lg font-bold tabular-nums sm:text-base">
-              {mode === "cash" && change > 0
-                ? `Qaytim ${formatMoney(som(change))}`
-                : formatMoney(som(total))}
+            <span className="min-w-0 truncate text-base leading-6 font-bold tabular-nums sm:text-lg pointer-fine:text-base">
+              {(mode === "cash" && change < 0) ||
+              (mode === "mixed" && mixDiff > 0) ? (
+                <>
+                  <span className="sm:hidden">−</span>
+                  <span className="hidden sm:inline">Yetmayapti </span>
+                  {formatMoney(
+                    som(mode === "cash" ? -change : mixDiff),
+                    false,
+                  )}
+                </>
+              ) : mode === "cash" && change > 0 ? (
+                `Qaytim ${formatMoney(som(change), false)}`
+              ) : (
+                formatMoney(som(total))
+              )}
             </span>
           </Button>
         </div>

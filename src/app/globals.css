@@ -58,7 +58,7 @@
   --dialog-footer: oklch(0.975 0.005 290);
   --brand-from: oklch(0.549 0.282 297.9);
   --brand-to: oklch(0.411 0.25 278.3);
-  --background: oklch(0.97 0.006 290);
+  --background: oklch(0.985 0.002 285);
   --foreground: oklch(0.2 0.02 285);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.2 0.02 285);
@@ -68,27 +68,27 @@
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.965 0.012 290);
   --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.975 0.005 290);
+  --muted: oklch(0.965 0.003 285);
   --muted-foreground: oklch(0.556 0 0);
   --accent: oklch(0.955 0.03 293);
   --accent-foreground: oklch(0.411 0.25 278.3);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.91 0.01 290);
+  --border: oklch(0.2 0.01 285 / 8%);
   --input: oklch(0.89 0.012 290);
   --ring: oklch(0.471 0.268 284.9 / 55%);
   --chart-1: oklch(0.471 0.268 284.9);
-  --chart-2: oklch(0.68 0.17 297);
-  --chart-3: oklch(0.6 0.02 270);
-  --chart-4: oklch(0.78 0.12 75);
+  --chart-2: oklch(0.62 0.15 230);
+  --chart-3: oklch(0.7 0.14 175);
+  --chart-4: oklch(0.78 0.14 85);
   --chart-5: oklch(0.62 0.18 25);
   --radius: 0.75rem;
-  --sidebar: oklch(0.985 0.004 290);
+  --sidebar: oklch(0.975 0.003 285);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.471 0.268 284.9);
   --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.955 0.03 293);
-  --sidebar-accent-foreground: oklch(0.411 0.25 278.3);
-  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-accent: oklch(0.2 0.01 285 / 6%);
+  --sidebar-accent-foreground: oklch(0.2 0.02 285);
+  --sidebar-border: oklch(0.2 0.01 285 / 8%);
   --sidebar-ring: oklch(0.471 0.268 284.9 / 55%);
 }
 
@@ -96,36 +96,36 @@
   --receipt: oklch(0.245 0.02 285);
   --receipt-rule: oklch(0.4 0.02 285);
   --dialog-footer: oklch(0.215 0.017 285);
-  --background: oklch(0.155 0.012 285);
+  --background: oklch(0.145 0.004 285);
   --foreground: oklch(0.985 0 0);
-  --card: oklch(0.195 0.016 285);
+  --card: oklch(0.185 0.006 285);
   --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.195 0.016 285);
+  --popover: oklch(0.185 0.006 285);
   --popover-foreground: oklch(0.985 0 0);
   --primary: oklch(0.66 0.2 295);
   --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.26 0.02 285);
+  --secondary: oklch(0.24 0.006 285);
   --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.235 0.018 285);
-  --muted-foreground: oklch(0.72 0.02 285);
+  --muted: oklch(0.22 0.006 285);
+  --muted-foreground: oklch(0.68 0.01 285);
   --accent: oklch(0.3 0.09 285);
   --accent-foreground: oklch(0.9 0.06 295);
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(0.9 0.03 285 / 11%);
-  --input: oklch(0.9 0.03 285 / 16%);
+  --border: oklch(1 0 0 / 8%);
+  --input: oklch(1 0 0 / 12%);
   --ring: oklch(0.66 0.2 295 / 55%);
   --chart-1: oklch(0.66 0.2 295);
-  --chart-2: oklch(0.5 0.22 284);
-  --chart-3: oklch(0.65 0.02 270);
-  --chart-4: oklch(0.8 0.12 75);
+  --chart-2: oklch(0.72 0.14 230);
+  --chart-3: oklch(0.8 0.13 175);
+  --chart-4: oklch(0.84 0.14 85);
   --chart-5: oklch(0.68 0.17 25);
-  --sidebar: oklch(0.195 0.016 285);
+  --sidebar: oklch(0.165 0.005 285);
   --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: oklch(0.66 0.2 295);
   --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.3 0.09 285);
-  --sidebar-accent-foreground: oklch(0.9 0.06 295);
-  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-accent: oklch(1 0 0 / 6%);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 7%);
   --sidebar-ring: oklch(0.66 0.2 295 / 55%);
 }
 
@@ -193,7 +193,8 @@ select optgroup {
    1) 16px dan kichik maydonga fokus bo'lsa iOS sahifani kattalashtiradi — mobilda 16px.
    2) type="date" iOS'da konteynerdan kengayib ketadi va bo'sh ko'rinadi. */
 @media (max-width: 767px) {
-  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  /* .text-2xl — kassadagi katta summa maydoni (24px > 16px, zoom bo‘lmaydi) */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not(.text-2xl),
   select,
   textarea {
     font-size: 16px !important;

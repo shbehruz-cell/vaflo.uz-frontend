@@ -29,13 +29,14 @@ export function usePeriod(defaultPreset: Preset = "today") {
   return { preset, dateFrom, dateTo, ready, query }
 }
 
-export function PeriodFilter({ defaultPreset = "today" }: { defaultPreset?: Preset }) {
+export function PeriodFilter({ defaultPreset = "today", variant }: { defaultPreset?: Preset; variant?: "segmented" | "inline" }) {
   const { set } = useUrlState()
   const { preset, dateFrom, dateTo } = usePeriod(defaultPreset)
   const invalid = preset === "custom" && !!dateFrom && !!dateTo && dateFrom > dateTo
 
   return (
     <PeriodPicker
+      variant={variant}
       options={PRESET_OPTIONS.filter((p) => p.value !== "custom")}
       value={preset}
       onChange={(v) => set({ preset: v === defaultPreset ? "" : v, dateFrom: "", dateTo: "", page: "" })}

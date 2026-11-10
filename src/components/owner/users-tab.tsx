@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { isFinePointer } from "@/lib/pointer"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { Ban, KeyRound, Pencil, RefreshCw, ShieldCheck } from "lucide-react"
+import { AtSign, Ban, CalendarDays, CircleDot, KeyRound, Pencil, RefreshCw, ShieldCheck, UserRound } from "lucide-react"
 import { toast } from "sonner"
 import { EmptyState, ErrorState, LoadingRows } from "@/components/app/states"
 import { PaginationBar } from "@/components/app/pagination-bar"
@@ -22,7 +22,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Badge } from "@/components/ui/badge"
+import { ColumnHead } from "@/components/app/column-head"
+import { DotLabel, StatusChip } from "@/components/app/status-chip"
+import { TABLE_CARD, THEAD, TROW } from "@/components/inventory/common"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
@@ -210,40 +212,40 @@ export function UsersTab() {
                     </div>
                     <div className="truncate text-xs text-muted-foreground">{u.login}</div>
                   </div>
-                  <Badge variant={u.status === "ACTIVE" ? "outline" : "destructive"}>{u.status === "ACTIVE" ? "Faol" : "Bloklangan"}</Badge>
+                  <StatusChip tone={u.status === "ACTIVE" ? "success" : "danger"}>{u.status === "ACTIVE" ? "Faol" : "Bloklangan"}</StatusChip>
                 </div>
                 <div className="mt-1 flex items-center justify-between gap-2">
-                  <Badge variant={u.role.key === "owner" ? "default" : "secondary"}>{u.role.name}</Badge>
+                  <DotLabel colorKey={u.role.key}>{u.role.name}</DotLabel>
                   {rowActions(u)}
                 </div>
               </div>
             ))}
           </div>
-          <div className="hidden overflow-hidden rounded-2xl border bg-card md:block">
+          <div className={`hidden md:block ${TABLE_CARD}`}>
             <Table>
-              <TableHeader className="bg-muted/50 [&_th]:h-10 [&_th]:text-xs [&_th]:font-medium [&_th]:text-muted-foreground">
+              <TableHeader className={THEAD}>
                 <TableRow>
-                  <TableHead>Ism</TableHead>
-                  <TableHead className="hidden sm:table-cell">Login</TableHead>
-                  <TableHead>Rol</TableHead>
-                  <TableHead>Holat</TableHead>
-                  <TableHead className="hidden lg:table-cell">Yaratilgan</TableHead>
+                  <TableHead><ColumnHead icon={UserRound}>Ism</ColumnHead></TableHead>
+                  <TableHead className="hidden sm:table-cell"><ColumnHead icon={AtSign}>Login</ColumnHead></TableHead>
+                  <TableHead><ColumnHead icon={ShieldCheck}>Rol</ColumnHead></TableHead>
+                  <TableHead><ColumnHead icon={CircleDot}>Holat</ColumnHead></TableHead>
+                  <TableHead className="hidden lg:table-cell"><ColumnHead icon={CalendarDays}>Yaratilgan</ColumnHead></TableHead>
                   <TableHead className="text-right">Amallar</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {users.data.items.map((u) => (
-                  <TableRow key={u.id}>
+                  <TableRow key={u.id} className={`${TROW} ${u.status !== "ACTIVE" ? "text-muted-foreground" : ""}`}>
                     <TableCell className="font-medium">
                       {u.name} {u.id === me?.id && <span className="text-xs text-muted-foreground">(siz)</span>}
                       <div className="text-xs font-normal text-muted-foreground sm:hidden">{u.login}</div>
                     </TableCell>
                     <TableCell className="hidden text-muted-foreground sm:table-cell">{u.login}</TableCell>
                     <TableCell>
-                      <Badge variant={u.role.key === "owner" ? "default" : "secondary"}>{u.role.name}</Badge>
+                      <DotLabel colorKey={u.role.key}>{u.role.name}</DotLabel>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={u.status === "ACTIVE" ? "outline" : "destructive"}>{u.status === "ACTIVE" ? "Faol" : "Bloklangan"}</Badge>
+                      <StatusChip tone={u.status === "ACTIVE" ? "success" : "danger"}>{u.status === "ACTIVE" ? "Faol" : "Bloklangan"}</StatusChip>
                     </TableCell>
                     <TableCell className="hidden text-muted-foreground lg:table-cell">{formatDateTime(u.createdAt)}</TableCell>
                     <TableCell>
