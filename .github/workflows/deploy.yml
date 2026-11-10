@@ -2,38 +2,39 @@ name: Frontend CI/CD Production Deployment
 
 on:
   push:
-    branches: [ main ] # Agar asosiy branchingiz master bo'lsa, master deb yozing
+    branches: [ main ]
+  workflow_dispatch:
+
+# Bir vaqtda faqat bitta deploy — ketma-ket push’larda eskisi bekor qilinadi
+concurrency:
+  group: frontend-production
+  cancel-in-progress: true
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: SSH orqali ulanish va faqat frontendni yangilash
+      - name: SSH orqali faqat frontendni yangilash
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
+          command_timeout: 20m
           script: |
-            # Serverdagi loyiha papkasiga o'tish
-            cd /home/vaflo.uz
-            
-            # Agar sizda umumiy deploy.sh bo'lsa va u frontendni ham o'zi yangilasa:
-            if [ -f deploy.sh ]; then
-              chmod +x deploy.sh
-              ./deploy.sh
-            else
-              # Agar deploy.sh bo'lmasa, faqat frontend papkasiga kirib yangilaymiz:
-              cd frontend
-              git fetch --all
-              git reset --hard origin/main
-              npm install
-              npm run build
-              
-              # PM2 orqali faqat frontend servisini yoki umumiy ekotizimni yangilash:
-              cd ..
-              pm2 reload ecosystem.config.cjs --env production
-            fi
-            
+            # Xato bo‘lsa to‘xtaydi — yarim build bilan pm2 qayta ishga tushmaydi
+            set -euo pipefail
+
+            # Eski /home/vaflo.uz/deploy.sh ISHLATILMAYDI: u BASE_PATH=/app bilan build qiladi
+            # va eski pm2 nomlarini (vaflo-*) ishga tushiradi. Hozirgi sozlama: pm2 "frontend", BASE_PATH siz.
+            cd /home/vaflo.uz/frontend
+            git fetch --all --prune
+            git reset --hard origin/main
+
+            npm ci --no-audit --no-fund
+            BACKEND_URL=http://127.0.0.1:4000 NEXT_TELEMETRY_DISABLED=1 npm run build
+
+            pm2 restart frontend --update-env
+
             echo "Frontend muvaffaqiyatli yangilandi!"
