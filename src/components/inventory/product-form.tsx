@@ -44,6 +44,7 @@ const isNum = (s: string, digits: number) =>
 type Errors = Partial<
   Record<
     | "name"
+    | "unit"
     | "salePrice"
     | "costPrice"
     | "minStock"
@@ -201,6 +202,7 @@ function Body({
       const m = e.message;
       if (/shtrix/i.test(m)) setErrors({ barcodes: m });
       else if (/SKU/.test(m)) setErrors({ sku: m });
+      else if (/birlik/i.test(m)) setErrors({ unit: m });
       else setErrors({ form: m });
     },
   });
@@ -259,6 +261,7 @@ function Body({
         name: name.trim(),
         sku: sku.trim() || null,
         categoryId: categoryId && categoryId !== NEW_CAT ? categoryId : null,
+        ...(unit !== product.unit && { unit }),
         ...(canPrice && { salePrice: sp }),
         ...(canCost && cp && { costPrice: cp }),
         minStock: ms || "0",
@@ -359,7 +362,7 @@ function Body({
                   className={SELECT}
                   value={unit}
                   onChange={(e) => setUnit(e.target.value)}
-                  disabled={editing}
+                  aria-describedby={editing && unit !== product?.unit ? "pf-unit-hint" : undefined}
                 >
                   {Object.entries(UNIT_LABELS).map(([k, v]) => (
                     <option key={k} value={k}>
@@ -367,6 +370,12 @@ function Body({
                     </option>
                   ))}
                 </select>
+                {errors.unit && <FieldError>{errors.unit}</FieldError>}
+                {editing && product && unit !== product.unit && !errors.unit && (
+                  <FieldDescription id="pf-unit-hint">
+                    Qoldiq va sotuvlar tarixidagi miqdorlar o‘zgarmaydi — faqat birlik nomi yangilanadi.
+                  </FieldDescription>
+                )}
               </Field>
               <Field>
                 <FieldLabel htmlFor="pf-cat">Kategoriya</FieldLabel>

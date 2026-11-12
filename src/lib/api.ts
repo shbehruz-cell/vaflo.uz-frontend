@@ -24,10 +24,32 @@ export const setUnauthorizedHandler = (fn: () => void) => {
   onUnauthorized = fn
 }
 
+/** Refresh vaqtinchalik muvaffaqiyatsiz (tarmoq uzildi, server band) — sessiya tugagan degani EMAS. */
+export class RefreshUnavailableError extends Error {}
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
+/**
+ * Access tokenni refresh cookie orqali yangilaydi.
+ * - `string` — yangi token; `null` — sessiya haqiqatan yo‘q (server 401/403 qaytardi) → login kerak.
+ * - Tarmoq xatosi / 5xx / 429 → qayta urinadi (iOS Safari sahifa yangilanganda yoki ilovaga qaytganda
+ *   so‘rovlarni uzib yuboradi); baribir bo‘lmasa `RefreshUnavailableError` — foydalanuvchi chiqarib yuborilmaydi.
+ */
 export async function refreshAccessToken(): Promise<string | null> {
-  refreshing ??= fetch("/api/v1/auth/refresh", { method: "POST", credentials: "include" })
-    .then(async (r) => (r.ok ? ((await r.json()) as { accessToken: string }).accessToken : null))
-    .catch(() => null)
+  refreshing ??= (async () => {
+    const delays = [0, 600, 1500, 3000]
+    for (const d of delays) {
+      if (d) await sleep(d)
+      try {
+        const r = await fetch("/api/v1/auth/refresh", { method: "POST", credentials: "include", cache: "no-store" })
+        if (r.ok) return ((await r.json()) as { accessToken: string }).accessToken
+        if (r.status === 401 || r.status === 403) return null
+      } catch {
+        // tarmoq xatosi — qayta urinamiz
+      }
+    }
+    throw new RefreshUnavailableError("Server bilan aloqa yo‘q")
+  })()
     .then((t) => {
       accessToken = t
       return t
@@ -65,7 +87,13 @@ async function request<T>(method: string, path: string, body?: unknown, retry = 
   })
 
   if (res.status === 401 && retry && !path.startsWith("/auth/")) {
-    const t = await refreshAccessToken()
+    let t: string | null
+    try {
+      t = await refreshAccessToken()
+    } catch {
+      // Aloqa vaqtincha yo‘q — sessiyani o‘chirmaymiz, so‘rov xatosi sifatida qaytaramiz
+      throw new ApiError(0, "Server bilan aloqa yo‘q. Internetni tekshirib, qayta urinib ko‘ring")
+    }
     if (t) return request<T>(method, path, body, false, signal)
     onUnauthorized?.()
   }

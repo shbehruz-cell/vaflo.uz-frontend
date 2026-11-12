@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
-import { api, refreshAccessToken, setAccessToken, setUnauthorizedHandler } from "@/lib/api"
+import { ApiError, api, refreshAccessToken, RefreshUnavailableError, setAccessToken, setUnauthorizedHandler } from "@/lib/api"
 
 export type PermissionCode =
   | "products.read" | "products.manage" | "inventory.read" | "inventory.adjust"
@@ -59,13 +59,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     setUnauthorizedHandler(reset)
     // Sahifa yangilanganda sessiyani refresh cookie orqali tiklash
-    refreshAccessToken()
-      .then(async (t) => {
+    // Faqat server "sessiya yo‘q" desa (null) login sahifasiga yuboriladi. Aloqa vaqtincha bo‘lmasa
+    // (iOS Safari so‘rovni uzgan, internet sekin) — internet qaytganda yoki sahifaga qaytilganda qayta urinadi.
+    let cancelled = false
+    const restore = async () => {
+      try {
+        const t = await refreshAccessToken()
+        if (cancelled) return
         if (!t) return reset()
-        setUser(await api.get<Me>("/auth/me"))
+        const me = await api.get<Me>("/auth/me")
+        if (cancelled) return
+        setUser(me)
         setStatus("authenticated")
-      })
-      .catch(reset)
+        detach()
+      } catch (e) {
+        if (cancelled) return
+        if (e instanceof RefreshUnavailableError || (e instanceof ApiError && e.status === 0)) return // kutamiz
+        reset()
+      }
+    }
+    const onWake = () => {
+      if (document.visibilityState === "visible") void restore()
+    }
+    const detach = () => {
+      window.removeEventListener("online", onWake)
+      document.removeEventListener("visibilitychange", onWake)
+    }
+    window.addEventListener("online", onWake)
+    document.addEventListener("visibilitychange", onWake)
+    void restore()
+    return () => {
+      cancelled = true
+      detach()
+    }
   }, [reset])
 
   const login = useCallback(async (login: string, password: string): Promise<LoginResult> => {

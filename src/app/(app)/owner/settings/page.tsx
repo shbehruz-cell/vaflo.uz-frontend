@@ -3,13 +3,14 @@
 import { isFinePointer } from "@/lib/pointer"
 import { useEffect, useMemo, useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { Clock, Inbox, Monitor, Phone, Plus, Store as StoreIcon, Warehouse as WarehouseIcon } from "lucide-react"
+import { Clock, Inbox, Monitor, Phone, Plus, Store as StoreIcon } from "lucide-react"
 import { toast } from "sonner"
 import { FormSheet } from "@/components/app/form-sheet"
 import { PageHeader } from "@/components/app/page-header"
 import { Panel, RingProgress } from "@/components/app/panel"
 import { ViewTabs } from "@/components/app/view-tabs"
 import { EmptyState, ErrorState, LoadingRows, NoAccess } from "@/components/app/states"
+import { WarehousesCard } from "@/components/owner/warehouses-card"
 import { RegistersList, type RegisterRow } from "@/components/owner/registers-card"
 import { NativeSelect } from "@/components/reports/native-select"
 import { Badge } from "@/components/ui/badge"
@@ -273,40 +274,6 @@ function AddDialog({ kind, onClose, warehouses }: { kind: "warehouse" | "registe
   )
 }
 
-/* ───────────────────────── Omborlar ───────────────────────── */
-
-function WarehousesList({ warehouses, registers }: { warehouses: Warehouse[]; registers?: RegisterRow[] }) {
-  if (!warehouses.length) return <EmptyState title="Hali ombor yo‘q" description="Birinchi omborni qo‘shing — mahsulot qoldig‘i shu yerda yuritiladi." />
-  return (
-    <ul className="divide-y overflow-hidden rounded-2xl border bg-card">
-      {warehouses.map((w) => {
-        const regs = registers?.filter((r) => r.warehouseId === w.id) ?? []
-        return (
-          <li key={w.id} className="flex items-center gap-3 p-4">
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-              <WarehouseIcon className="size-5" />
-            </span>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <span className="truncate font-medium">{w.name}</span>
-                <Badge variant="outline" className="font-mono text-[11px]">
-                  {w.code}
-                </Badge>
-              </div>
-              <div className="truncate text-xs text-muted-foreground">
-                {regs.length ? `Sotadigan kassalar: ${regs.map((r) => r.name).join(", ")}` : "Bu ombordan sotadigan kassa yo‘q"}
-              </div>
-            </div>
-            <span className="inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground tabular-nums">
-              <Monitor className="size-3.5" aria-hidden="true" /> {regs.length}
-            </span>
-          </li>
-        )
-      })}
-    </ul>
-  )
-}
-
 /* ───────────────────────── Demo so‘rovlar ───────────────────────── */
 
 function DemoRequests({ q }: { q: ReturnType<typeof useDemoRequests> }) {
@@ -405,7 +372,7 @@ function UsagePanel({
 
 export default function OwnerSettingsPage() {
   const { isOwner, can } = useAuth()
-  const [dlg, setDlg] = useState<"warehouse" | "register" | null>(null)
+  const [dlg, setDlg] = useState<"register" | null>(null)
   const [tabState, setTab] = useState<string>("")
   const manageRegisters = can("registers.manage")
   const seeDemo = can("demo_requests.read")
@@ -466,21 +433,7 @@ export default function OwnerSettingsPage() {
             </Section>
           )}
 
-          {isOwner && (
-            <Section
-              id="omborlar"
-              title="Omborlar"
-              description="Mahsulot qoldig‘i har bir ombor bo‘yicha yuritiladi; kassa o‘z omboridan sotadi."
-              action={
-                <Button size="sm" variant="outline" className="h-10 md:h-9" onClick={() => setDlg("warehouse")}>
-                  <Plus /> <span className="hidden sm:inline">Ombor qo‘shish</span>
-                  <span className="sm:hidden">Qo‘shish</span>
-                </Button>
-              }
-            >
-              {whs.isLoading ? <LoadingRows rows={2} /> : whs.isError ? <ErrorState error={whs.error} onRetry={() => void whs.refetch()} /> : <WarehousesList warehouses={whs.data ?? []} registers={regs.data} />}
-            </Section>
-          )}
+          {isOwner && <WarehousesCard />}
         </div>
       )}
 
