@@ -13,6 +13,7 @@ import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
 import { api } from "@/lib/api"
+import { passwordHint } from "@/lib/password"
 import { homePath, useAuth } from "@/lib/auth"
 import { isFinePointer } from "@/lib/pointer"
 
@@ -168,7 +169,8 @@ export default function LoginPage() {
     e.preventDefault()
     const fd = new FormData(e.currentTarget)
     const pass = String(fd.get("newPassword") ?? "")
-    if (pass.length < 8) return setError("Parol kamida 8 ta belgi bo‘lsin")
+    const pw = passwordHint(pass)
+    if (pw) return setError(pw)
     if (pass !== String(fd.get("confirm") ?? "")) return setError("Parollar mos emas")
     if (!resetToken) return go("forgot")
     await guarded(async () => {
@@ -326,7 +328,7 @@ export default function LoginPage() {
       {view === "newPassword" && (
         <form onSubmit={onNewPassword} noValidate className="mt-6">
           <FieldGroup className="gap-5">
-            <PasswordField id="newPassword" name="newPassword" label="Yangi parol" hint="Kamida 8 ta belgi" autoComplete="new-password" autoFocus={isFinePointer()} />
+            <PasswordField id="newPassword" name="newPassword" label="Yangi parol" hint="Kamida 8 ta belgi, harf va raqam" autoComplete="new-password" autoFocus={isFinePointer()} />
             <PasswordField id="confirm" name="confirm" label="Parolni takrorlang" autoComplete="new-password" />
             <Button type="submit" className="h-11 w-full rounded-xl text-base" disabled={pending} aria-busy={pending}>
               {submitLabel("Parolni saqlash", "Saqlanmoqda…")}

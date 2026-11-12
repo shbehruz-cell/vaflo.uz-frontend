@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
 import { Switch } from "@/components/ui/switch"
 import { api } from "@/lib/api"
+import { passwordHint } from "@/lib/password"
 import { useAuth } from "@/lib/auth"
 
 interface SessionItem {
@@ -54,7 +55,8 @@ function PasswordCard() {
     const fd = new FormData(form)
     const newPassword = String(fd.get("newPassword"))
     if (newPassword !== String(fd.get("confirm"))) return setError("Yangi parollar mos emas")
-    if (newPassword.length < 8) return setError("Yangi parol kamida 8 ta belgi bo‘lsin")
+    const pw = passwordHint(newPassword)
+    if (pw) return setError(pw)
     setError(null)
     setPending(true)
     try {

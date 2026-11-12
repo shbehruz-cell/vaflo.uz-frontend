@@ -5,6 +5,10 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+# GITHUB_TOKEN uchun eng kam huquq: workflow repo’ga yozmaydi
+permissions:
+  contents: read
+
 # Bir vaqtda faqat bitta deploy — ketma-ket push’larda eskisi bekor qilinadi
 concurrency:
   group: frontend-production
