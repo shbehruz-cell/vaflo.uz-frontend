@@ -73,7 +73,7 @@ function PasswordField({ value, onChange, label = "Parol" }: { value: string; on
     <Field>
       <FieldLabel htmlFor="pw">{label}</FieldLabel>
       <div className="flex gap-2">
-        <Input id="pw" value={value} onChange={(e) => onChange(e.target.value)} autoComplete="off" placeholder="Kamida 8 belgi" className="h-11 min-w-0 font-mono sm:h-10" />
+        <Input id="pw" value={value} onChange={(e) => onChange(e.target.value)} autoComplete="off" placeholder="Kamida 8 belgi, harf va raqam" className="h-11 min-w-0 font-mono sm:h-10" />
         <Button type="button" variant="outline" className="h-11 shrink-0 sm:h-10" onClick={() => onChange(generatePassword())}>
           <RefreshCw /> Yaratish
         </Button>

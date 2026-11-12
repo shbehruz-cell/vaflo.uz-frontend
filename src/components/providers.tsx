@@ -9,7 +9,7 @@ import { AuthProvider } from "@/lib/auth"
 import { ApiError } from "@/lib/api"
 import { ViewportSync } from "@/components/app/viewport-sync"
 
-export function Providers({ children }: { children: React.ReactNode }) {
+export function Providers({ children, nonce }: { children: React.ReactNode; nonce?: string }) {
   const [client] = useState(
     () =>
       new QueryClient({
@@ -25,7 +25,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   )
 
   return (
-    <ThemeProvider>
+    <ThemeProvider nonce={nonce}>
       <QueryClientProvider client={client}>
         <AuthProvider>
           <TooltipProvider>

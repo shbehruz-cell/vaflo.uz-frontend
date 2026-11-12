@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
+import { connection } from "next/server";
 import { Geist_Mono, Onest } from "next/font/google";
 import { Providers } from "@/components/providers";
 import "./globals.css";
@@ -20,7 +22,11 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  // Har bir so‘rov dinamik render qilinadi: CSP nonce (src/proxy.ts) faqat shunda skriptlarga qo‘shiladi.
+  await connection();
+  // src/proxy.ts qo‘ygan nonce: Next o‘z skriptlariga o‘zi qo‘shadi, next-themes inline skriptiga qo‘lda uzatiladi
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
   return (
     <html
       lang="uz"
@@ -28,7 +34,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${onest.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full">
-        <Providers>{children}</Providers>
+        <Providers nonce={nonce}>{children}</Providers>
       </body>
     </html>
   );

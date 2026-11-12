@@ -14,6 +14,7 @@ import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
 import { ApiError, api } from "@/lib/api"
+import { passwordHint } from "@/lib/password"
 import { homePath, useAuth } from "@/lib/auth"
 import { isFinePointer } from "@/lib/pointer"
 
@@ -154,7 +155,8 @@ export default function SignupPage() {
     const next: Errors = {}
     if (name.length < 2) next.name = "Ismingizni kiriting (kamida 2 ta belgi)"
     if (storeName.length < 2) next.storeName = "Do‘kon nomini kiriting (kamida 2 ta belgi)"
-    if (password.length < 8) next.password = "Parol kamida 8 ta belgi bo‘lsin"
+    const pw = passwordHint(password)
+    if (pw) next.password = pw
     else if (password.toLowerCase() === email) next.password = "Parol email manzilingiz bilan bir xil bo‘lmasin"
     if (!next.password && password !== confirm) next.confirm = "Parollar mos emas"
     setErrors(next)
@@ -342,7 +344,7 @@ export default function SignupPage() {
                 </p>
               )}
             </Field>
-            <PasswordField ref={passRef} id="password" name="password" label="Parol" hint="Kamida 8 ta belgi" autoComplete="new-password" error={errors.password} />
+            <PasswordField ref={passRef} id="password" name="password" label="Parol" hint="Kamida 8 ta belgi, harf va raqam" autoComplete="new-password" error={errors.password} />
             <PasswordField ref={confirmRef} id="confirm" name="confirm" label="Parolni takrorlang" autoComplete="new-password" enterKeyHint="go" error={errors.confirm} />
             <Button type="submit" className="mt-1 h-11 w-full rounded-xl text-base" disabled={pending} aria-busy={pending}>
               {busy(pending, "Do‘konni yaratish", "Yaratilmoqda…")}

@@ -32,3 +32,10 @@ Brauzer `/api/v1/*` so‘rovlarini Next rewrites orqali backendga yuboradi (`BAC
 | `/audit` | Audit jurnali | `audit.read` |
 
 Menyu ruxsatlarga qarab quriladi; backend har bir so‘rovni baribir qayta tekshiradi.
+
+## Xavfsizlik
+
+- `src/proxy.ts` har so‘rovga nonce asosidagi Content-Security-Policy qo‘yadi (XSS, clickjacking, begona skriptlar bloklanadi); shuning uchun barcha sahifalar dinamik render qilinadi (`app/layout.tsx` → `connection()`).
+- `next.config.ts` → `headers()`: `X-Frame-Options`, `nosniff`, `Referrer-Policy`, `Permissions-Policy`, HSTS; `poweredByHeader` o‘chiq.
+- Access token faqat xotirada, refresh token httpOnly cookie’da. Tashqi skript qo‘shishda (`<Script>`) `nonce` uzating yoki CSP’ni `src/proxy.ts` da kengaytiring.
+- To‘liq ro‘yxat va server sozlamalari: backend `docs/SECURITY.md`.
