@@ -3,10 +3,10 @@
 import { Suspense, useEffect, useState } from "react"
 import Link from "next/link"
 import { useQuery } from "@tanstack/react-query"
-import { Archive, ArrowUpDown, Boxes, CircleDot, ClipboardList, FileSpreadsheet, Hash, Layers, MoreHorizontal, Package, Pencil, Plus, RotateCcw, Sparkles, Tag, Wallet } from "lucide-react"
+import { ArrowUpDown, Boxes, ClipboardList, FileSpreadsheet, Hash, Layers, MoreHorizontal, Package, Pencil, Plus, Sparkles, Tag, Trash2, Wallet } from "lucide-react"
 import { AiImportDialog } from "@/components/inventory/ai-import-dialog"
-import { ArchiveDialog } from "@/components/inventory/archive-dialog"
-import { ActiveBadge, TABLE_CARD, THEAD, TROW, useCategories, type Product } from "@/components/inventory/common"
+import { DeleteProductDialog } from "@/components/inventory/delete-product-dialog"
+import { TABLE_CARD, THEAD, TROW, useCategories, type Product } from "@/components/inventory/common"
 import { ProductFormDialog } from "@/components/inventory/product-form"
 import { ErrorState, EmptyState, LoadingRows } from "@/components/app/states"
 import { AddButton } from "@/components/app/add-button"
@@ -54,7 +54,6 @@ function ProductsView() {
   const page = Number(get("page", "1")) || 1
   const categoryId = get("category")
   const low = get("low") === "1"
-  const status = get("status", "active")
   const sort = get("sort", "name:asc")
   const [sortBy, sortDir] = sort.split(":")
 
@@ -62,7 +61,6 @@ function ProductsView() {
     q: urlQ,
     categoryId,
     lowStock: low || undefined,
-    isActive: status === "active" ? true : status === "archived" ? false : undefined,
     sortBy,
     sortDir,
     page,
@@ -78,7 +76,7 @@ function ProductsView() {
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<Product | null>(null)
   const [aiOpen, setAiOpen] = useState(false)
-  const [archiving, setArchiving] = useState<Product | null>(null)
+  const [deleting, setDeleting] = useState<Product | null>(null)
 
   const openCreate = () => {
     setEditing(null)
@@ -110,8 +108,8 @@ function ProductsView() {
           {canManage && (
             <>
               <DropdownMenuSeparator />
-              <DropdownMenuItem variant={p.isActive ? "destructive" : "default"} onClick={() => setArchiving(p)}>
-                {p.isActive ? <Archive /> : <RotateCcw />} {p.isActive ? "Arxivlash" : "Tiklash"}
+              <DropdownMenuItem variant="destructive" onClick={() => setDeleting(p)}>
+                <Trash2 /> O‘chirish
               </DropdownMenuItem>
             </>
           )}
@@ -128,7 +126,7 @@ function ProductsView() {
     </span>
   )
 
-  const tab = status === "archived" ? "archived" : status === "all" ? "all" : low ? "low" : "active"
+  const tab = low ? "low" : "all"
   return (
     <div className="space-y-4">
       <PageHeader
@@ -161,13 +159,11 @@ function ProductsView() {
       <ViewTabs
         variant="pill"
         tabs={[
-          { value: "active", label: "Faol" },
+          { value: "all", label: "Hammasi" },
           { value: "low", label: "Kam qolgan" },
-          { value: "archived", label: "Arxiv" },
-          { value: "all", label: "Barchasi" },
         ]}
         value={tab}
-        onChange={(v) => set({ status: v === "active" || v === "low" ? null : v, low: v === "low" ? "1" : null, page: 1 })}
+        onChange={(v) => set({ status: null, low: v === "low" ? "1" : null, page: 1 })}
         toolbar={
           <>
             <SearchInput className="min-w-0 flex-1 sm:w-64 sm:flex-none" value={q} onChange={setQ} placeholder="Nomi, SKU yoki shtrix-kod" aria-label="Qidirish" />
@@ -221,13 +217,12 @@ function ProductsView() {
                   <TableHead className="text-right"><ColumnHead icon={Wallet}>Narx</ColumnHead></TableHead>
                   {canCost && <TableHead className="hidden text-right lg:table-cell"><ColumnHead icon={Wallet}>Tannarx</ColumnHead></TableHead>}
                   <TableHead className="text-right"><ColumnHead icon={Layers}>Qoldiq</ColumnHead></TableHead>
-                  <TableHead><ColumnHead icon={CircleDot}>Holat</ColumnHead></TableHead>
                   <TableHead className="w-10" />
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {data.items.map((p) => (
-                  <TableRow key={p.id} className={`${TROW} ${p.isActive ? "" : "text-muted-foreground"}`}>
+                  <TableRow key={p.id} className={TROW}>
                     <TableCell className="max-w-64">
                       <Link href={`/inventory/products/${p.id}`} className="font-medium hover:text-primary hover:underline">
                         {p.name}
@@ -239,9 +234,6 @@ function ProductsView() {
                     <TableCell className="text-right tabular-nums">{formatMoney(p.salePrice)}</TableCell>
                     {canCost && <TableCell className="hidden text-right tabular-nums lg:table-cell">{p.costPrice !== undefined ? formatMoney(p.costPrice) : "—"}</TableCell>}
                     <TableCell className="text-right">{qtyCell(p)}</TableCell>
-                    <TableCell>
-                      <ActiveBadge active={p.isActive} />
-                    </TableCell>
                     <TableCell>{actions(p)}</TableCell>
                   </TableRow>
                 ))}
@@ -266,7 +258,6 @@ function ProductsView() {
                   {qtyCell(p)}
                 </div>
                 <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-                  <ActiveBadge active={p.isActive} />
                   {p.category && <DotLabel className="text-xs">{p.category.name}</DotLabel>}
                   {canCost && p.costPrice !== undefined && <span>Tannarx: {formatMoney(p.costPrice)}</span>}
                 </div>
@@ -280,7 +271,7 @@ function ProductsView() {
 
       <ProductFormDialog open={formOpen} onOpenChange={setFormOpen} product={editing} />
       {canManage && <AiImportDialog open={aiOpen} onOpenChange={setAiOpen} />}
-      <ArchiveDialog product={archiving} onClose={() => setArchiving(null)} />
+      <DeleteProductDialog product={deleting} onClose={() => setDeleting(null)} />
     </div>
   )
 }

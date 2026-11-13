@@ -2,11 +2,11 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import { useQuery } from "@tanstack/react-query"
-import { Archive, ArrowLeft, Boxes, CalendarClock, ClipboardList, Layers, Pencil, RotateCcw, Tag, TextCursorInput } from "lucide-react"
-import { ArchiveDialog } from "@/components/inventory/archive-dialog"
-import { ActiveBadge, MovementBadge, REFERENCE_LABELS, THEAD, TROW, type Movement, type Product } from "@/components/inventory/common"
+import { ArrowLeft, Boxes, CalendarClock, ClipboardList, Info, Layers, Pencil, Tag, TextCursorInput, Trash2 } from "lucide-react"
+import { DeleteProductDialog } from "@/components/inventory/delete-product-dialog"
+import { MovementBadge, REFERENCE_LABELS, THEAD, TROW, type Movement, type Product } from "@/components/inventory/common"
 import { ProductFormDialog } from "@/components/inventory/product-form"
 import { EmptyState, ErrorState, LoadingRows } from "@/components/app/states"
 import { PageHeader } from "@/components/app/page-header"
@@ -23,8 +23,9 @@ import { cn } from "@/lib/utils"
 export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { can } = useAuth()
+  const router = useRouter()
   const [editOpen, setEditOpen] = useState(false)
-  const [archiving, setArchiving] = useState<Product | null>(null)
+  const [deleting, setDeleting] = useState<Product | null>(null)
 
   const { data: p, isLoading, error, refetch } = useQuery({
     queryKey: ["product", id],
@@ -76,29 +77,35 @@ export default function ProductDetailPage() {
         eyebrow={<><Boxes /> Mahsulot</>}
         title={
           <span className="flex flex-wrap items-center gap-2">
-            {p.name} <ActiveBadge active={p.isActive} />
+            {p.name}
           </span>
         }
         actions={
           <>
-            {can("inventory.adjust") && (
+            {p.isActive && can("inventory.adjust") && (
               <Button variant="outline" className="h-10" render={<Link href={`/inventory/adjustments/new?productId=${p.id}`} />} nativeButton={false}>
                 <ClipboardList /> Qoldiqni tuzatish
               </Button>
             )}
-            {can("products.manage") && (
+            {p.isActive && can("products.manage") && (
               <>
                 <Button variant="outline" className="h-10" onClick={() => setEditOpen(true)}>
                   <Pencil /> Tahrirlash
                 </Button>
-                <Button variant="outline" className="h-10" onClick={() => setArchiving(p)}>
-                  {p.isActive ? <Archive /> : <RotateCcw />} {p.isActive ? "Arxivlash" : "Tiklash"}
+                <Button variant="outline" className="h-10 text-destructive hover:text-destructive" onClick={() => setDeleting(p)}>
+                  <Trash2 /> O‘chirish
                 </Button>
               </>
             )}
           </>
         }
       />
+
+      {!p.isActive && (
+        <div className="flex items-center gap-2 rounded-xl border bg-muted/50 px-4 py-3 text-sm text-muted-foreground">
+          <Info className="size-4 shrink-0" /> Bu mahsulot o‘chirilgan
+        </div>
+      )}
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="rounded-2xl lg:col-span-2">
@@ -197,7 +204,7 @@ export default function ProductDetailPage() {
       )}
 
       <ProductFormDialog open={editOpen} onOpenChange={setEditOpen} product={p} />
-      <ArchiveDialog product={archiving} onClose={() => setArchiving(null)} />
+      <DeleteProductDialog product={deleting} onClose={() => setDeleting(null)} onDeleted={() => router.replace("/inventory/products")} />
     </div>
   )
 }
